@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  OWNER
+  ADMIN
+}
+
+enum CoffeeShopStatus {
+  OPEN
+  CLOSED
+  TEMPORARILY_CLOSED
+}
+
+enum AnalyticsEventType {
+  PROFILE_VIEW
+  MAP_CLICK
+  WHATSAPP_CLICK
+  INSTAGRAM_CLICK
+  MENU_VIEW
+  PROMOTION_VIEW
+}
+
+enum SubscriptionPlan {
+  FREE
+  FEATURED
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+model User {
+  id String @id @default(cuid())
+  name String
+  email String @unique
+  password String
+  role UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  coffeeShops CoffeeShop[]
+  reviews Review[]
+}
+
+model CoffeeShop {
+  id String @id @default(cuid())
+  ownerId String
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name String
+  slug String @unique
+  description String
+  address String
+  district String
+  latitude Float?
+  longitude Float?
+  phone String?
+  instagram String?
+  priceRange String
+  openingHours String
+  status CoffeeShopStatus @default(OPEN)
+  isVerified Boolean @default(false)
+  isFeatured Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  categories CoffeeShopCategory[]
+  facilities CoffeeShopFacility[]
+  menus Menu[]
+  images CoffeeShopImage[]
+  reviews Review[]
+  promotions Promotion[]
+  analyticsEvents AnalyticsEvent[]
+  subscription Subscription?
+  @@index([district])
+  @@index([isFeatured, createdAt])
+}
+
+model Category {
+  id String @id @default(cuid())
+  name String @unique
+  slug String @unique
+  coffeeShops CoffeeShopCategory[]
+}
+
+model Facility {
+  id String @id @default(cuid())
+  name String @unique
+  slug String @unique
+  coffeeShops CoffeeShopFacility[]
+}
+
+model CoffeeShopCategory {
+  coffeeShopId String
+  categoryId String
+  coffeeShop CoffeeShop @relation(fields: [coffeeShopId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  @@id([coffeeShopId, categoryId])
+}
+
+model CoffeeShopFacility {
+  coffeeShopId String
+  facilityId String
+  coffeeShop CoffeeShop @relation(fields: [coffeeShopId], references: [id], onDelete: Cascade)
+  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  @@id([coffeeShopId, facilityId])
+}
+
+model Menu {
+  id String @id @default(cuid())
+  coffeeShopId String
+  coffeeShop CoffeeShop @relation(fields: [coffeeShopId], references: [id], onDelete: Cascade)
+  name String
+  description String?
+  price Int
+  image String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CoffeeShopImage {
+  id String @id @default(cuid())
+  coffeeShopId String
+  coffeeShop CoffeeShop @relation(fields: [coffeeShopId], references: [id], onDelete: Cascade)
+  imageUrl String
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id String @id @default(cuid())
+  coffeeShopId String
+  userId String
+  coffeeShop CoffeeShop @relation(fields: [coffeeShopId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating Int
+  comment String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([coffeeShopId, userId])
+}
+
+model Promotion {
+  id String @id @default(cuid())
+  coffeeShopId String
+  coffeeShop CoffeeShop @relation(fields: [coffeeShopId], references: [id], onDelete: Cascade)
+  title String
+  description String
+  image String?
+  startDate DateTime
+  endDate DateTime
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+}
+
+model AnalyticsEvent {
+  id String @id @default(cuid())
+  coffeeShopId String
+  coffeeShop CoffeeShop @relation(fields: [coffeeShopId], references: [id], onDelete: Cascade)
+  eventType AnalyticsEventType
+  createdAt DateTime @default(now())
+  @@index([coffeeShopId, eventType, createdAt])
+}
+
+model Subscription {
+  id String @id @default(cuid())
+  coffeeShopId String @unique
+  coffeeShop CoffeeShop @relation(fields: [coffeeShopId], references: [id], onDelete: Cascade)
+  plan SubscriptionPlan @default(FREE)
+  startDate DateTime
+  endDate DateTime?
+  status SubscriptionStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+}

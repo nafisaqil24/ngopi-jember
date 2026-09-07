@@ -1,0 +1,1 @@
+Selalu jawab dan berkomunikasi menggunakan Bahasa Indonesia, kecuali untuk kode/variable/nama teknis.
