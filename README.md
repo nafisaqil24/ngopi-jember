@@ -84,4 +84,3 @@ Password disimpan sebagai hash bcrypt, bukan teks biasa. Pendaftaran publik tida
 cd frontend && npm run build
 cd ../backend && npm run build
 ```
-Selalu jawab dan berkomunikasi menggunakan Bahasa Indonesia, kecuali untuk kode/variable/nama teknis.
