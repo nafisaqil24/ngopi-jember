@@ -64,7 +64,11 @@ export default function AuthForm({ register }: { register: boolean }) {
         : await login(form.email, form.password);
       localStorage.setItem("ngopi_jember_token", session.token);
       localStorage.setItem("ngopi_jember_user", JSON.stringify(session.user));
-      navigate("/");
+      if (session.user.role === "OWNER") {
+        navigate("/dashboard");
+      } else {
+        navigate("/");
+      }
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Tidak dapat terhubung ke server. Coba lagi.");
     } finally {

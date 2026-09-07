@@ -1,23 +1,9 @@
 import { useCallback, useSyncExternalStore } from "react";
 import type { AuthUser } from "../services/auth";
 
-// Hook ini "membungkus" localStorage supaya komponen React bisa
-// baca data login (user + token) dengan cara yang lazim di React:
-// dipanggil seperti useState, dan otomatis re-render kalau datanya
-// berubah (misal setelah logout).
-//
-// Kenapa pakai useSyncExternalStore, bukan useState biasa?
-// Karena localStorage itu "sumber data di luar React" (external
-// store). useSyncExternalStore adalah hook resmi React untuk
-// nyambungin komponen ke sumber data seperti ini, supaya komponen
-// lain yang juga pakai useAuth() ikut ke-update kalau ada yang logout
-// di komponen lain.
-
 const TOKEN_KEY = "ngopi_jember_token";
 const USER_KEY = "ngopi_jember_user";
 
-// listeners: daftar "pemberitahuan" ke semua komponen yang pakai
-// useAuth(), supaya semua ikut re-render begitu ada perubahan login.
 const listeners = new Set<() => void>();
 
 function subscribe(callback: () => void) {
@@ -29,18 +15,36 @@ function notify() {
   listeners.forEach((callback) => callback());
 }
 
+let cachedRawUser: string | null = null;
+let cachedUser: AuthUser | null = null;
+
 function getUserSnapshot(): AuthUser | null {
   const raw = localStorage.getItem(USER_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as AuthUser;
-  } catch {
-    return null;
+  if (raw !== cachedRawUser) {
+    cachedRawUser = raw;
+    if (!raw) {
+      cachedUser = null;
+    } else {
+      try {
+        cachedUser = JSON.parse(raw) as AuthUser;
+      } catch {
+        cachedUser = null;
+      }
+    }
   }
+  return cachedUser;
 }
 
+let cachedRawToken: string | null = null;
+let cachedToken: string | null = null;
+
 function getTokenSnapshot(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  const raw = localStorage.getItem(TOKEN_KEY);
+  if (raw !== cachedRawToken) {
+    cachedRawToken = raw;
+    cachedToken = raw;
+  }
+  return cachedToken;
 }
 
 export function useAuth() {
@@ -50,6 +54,10 @@ export function useAuth() {
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    cachedRawUser = null;
+    cachedUser = null;
+    cachedRawToken = null;
+    cachedToken = null;
     notify();
   }, []);
 

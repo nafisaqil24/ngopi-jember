@@ -24,6 +24,7 @@ ownerRouter.get('/coffee-shop', async (request: AuthenticatedRequest, response, 
         facilities: { include: { facility: true } },
         images: { orderBy: { createdAt: 'asc' } },
         reviews: { select: { rating: true } },
+        menus: { orderBy: { createdAt: 'asc' } },
       },
     })
     if (!shop) return response.json({ success: true, data: null })
@@ -51,6 +52,7 @@ ownerRouter.get('/analytics', async (request: AuthenticatedRequest, response, ne
         by: ['eventType'],
         where: { coffeeShopId: shop.id },
         _count: { _all: true },
+        orderBy: { eventType: 'asc' },
       }),
       prisma.review.aggregate({
         where: { coffeeShopId: shop.id },
@@ -61,7 +63,7 @@ ownerRouter.get('/analytics', async (request: AuthenticatedRequest, response, ne
 
     // eventCounts dari Prisma bentuknya array [{ eventType: 'PROFILE_VIEW', _count: { _all: 5 } }, ...]
     // kita ratakan jadi object { PROFILE_VIEW: 5, MAP_CLICK: 2, ... } biar gampang dipakai di frontend.
-    const events = Object.fromEntries(eventCounts.map(item => [item.eventType, item._count._all]))
+    const events = Object.fromEntries(eventCounts.map(item => [item.eventType, (item._count as any)._all]))
 
     return response.json({
       success: true,

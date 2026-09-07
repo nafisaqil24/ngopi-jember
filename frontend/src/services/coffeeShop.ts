@@ -41,7 +41,7 @@ export type ApiCoffeeShopDetail = ApiCoffeeShopCard & {
   createdAt: string;
   updatedAt: string;
   categories: { category: { id: string; name: string; slug: string } }[];
-  menus: { id: string; name: string; description: string | null; price: number; image: string | null }[];
+  menus: { id: string; name: string; category?: string | null; description: string | null; price: number; image: string | null }[];
   images: { id: string; imageUrl: string }[];
   promotions: { id: string; title: string; description: string }[];
   reviews: { id: string; rating: number; comment: string; user: { name: string } }[];
@@ -97,4 +97,67 @@ export async function listCategories() {
 
 export async function listFacilities() {
   return get<ApiFacility[]>("/facilities");
+}
+
+export type ApiOwnerShop = ApiCoffeeShopDetail & {
+  menus: { id: string; name: string; category: string | null; description: string | null; price: number; image: string | null }[];
+};
+
+export async function getOwnerCoffeeShop(token: string) {
+  const response = await fetch(`${apiUrl}/owner/coffee-shop`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const payload = (await response.json()) as { success: boolean; data: ApiOwnerShop | null; message?: string };
+  if (!response.ok || !payload.success) {
+    throw new ApiError(payload.success ? "Permintaan gagal" : (payload.message || "Gagal memuat coffee shop"));
+  }
+  return payload.data;
+}
+
+export async function createMenu(
+  coffeeShopId: string,
+  token: string,
+  input: { name: string; category?: string; description?: string; price: number; image?: string }
+) {
+  const response = await fetch(`${apiUrl}/coffee-shops/${coffeeShopId}/menus`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  });
+  const payload = (await response.json()) as { success: boolean; data: any; message?: string; errors?: any };
+  if (!response.ok || !payload.success) {
+    throw new ApiError(payload.success ? "Permintaan gagal" : (payload.message || "Gagal menambahkan menu"));
+  }
+  return payload.data;
+}
+
+export async function createCoffeeShop(
+  token: string,
+  input: {
+    name: string;
+    description: string;
+    address: string;
+    district: string;
+    priceRange: string;
+    openingHours: string;
+    phone?: string;
+    instagram?: string;
+  }
+) {
+  const response = await fetch(`${apiUrl}/coffee-shops`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  });
+  const payload = (await response.json()) as { success: boolean; data: any; message?: string };
+  if (!response.ok || !payload.success) {
+    throw new ApiError(payload.success ? "Permintaan gagal" : (payload.message || "Gagal mendaftarkan coffee shop"));
+  }
+  return payload.data;
 }

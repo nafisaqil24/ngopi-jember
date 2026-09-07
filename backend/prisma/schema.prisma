@@ -119,6 +119,7 @@ model Menu {
   coffeeShopId String
   coffeeShop CoffeeShop @relation(fields: [coffeeShopId], references: [id], onDelete: Cascade)
   name String
+  category String?
   description String?
   price Int
   image String?

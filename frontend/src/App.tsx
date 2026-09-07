@@ -35,6 +35,14 @@ export default function App() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/owner/dashboard"
+        element={
+          <PrivateRoute allowedRoles={["OWNER"]}>
+            <OwnerDashboard />
+          </PrivateRoute>
+        }
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

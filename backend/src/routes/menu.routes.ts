@@ -7,6 +7,7 @@ export const menuRouter = Router({ mergeParams: true })
 
 const menuInput = z.object({
   name: z.string().trim().min(2).max(120),
+  category: z.string().trim().max(50).optional(),
   description: z.string().trim().max(500).optional(),
   price: z.number().int().min(0),
   image: z.string().trim().url().optional(),
