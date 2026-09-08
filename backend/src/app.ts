@@ -6,7 +6,25 @@ import { ownerRouter } from './routes/owner.routes.js'
 import { referenceRouter } from './routes/reference.routes.js'
 
 export const app = express()
-app.use(cors({ origin: process.env.CLIENT_URL ?? 'http://localhost:5173' }))
+
+const allowedOrigins = (process.env.CLIENT_URL ?? 'http://localhost:5173').split(',').map(s => s.trim())
+if (!allowedOrigins.includes('http://localhost:5173')) allowedOrigins.push('http://localhost:5173')
+if (!allowedOrigins.includes('http://localhost:3000')) allowedOrigins.push('http://localhost:3000')
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true)
+    const isAllowed = allowedOrigins.includes(origin) ||
+                      origin.endsWith('.devtunnels.ms') ||
+                      origin.endsWith('.githubpreview.dev') ||
+                      origin.endsWith('.gitpod.io')
+    if (isAllowed) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  }
+}))
 app.use(express.json())
 
 app.get('/api/health', (_request, response) => response.json({ success: true, data: { status: 'ok' } }))
