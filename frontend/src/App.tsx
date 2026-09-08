@@ -7,6 +7,7 @@ import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import PrivateRoute from "./components/auth/PrivateRoute";
 import OwnerDashboard from "./pages/owner/Dashboard";
+import { ToastProvider } from "./components/common/Toast";
 
 // App.tsx sekarang HANYA berisi routing. Sebelumnya file ini menumpuk
 // semua komponen (Layout, Home, Explorer, Detail, Auth, dll) jadi satu
@@ -21,29 +22,31 @@ import OwnerDashboard from "./pages/owner/Dashboard";
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/coffee-shops" element={<CoffeeShopExplorer />} />
-      <Route path="/coffee-shops/:slug" element={<CoffeeShopDetail />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route
-        path="/dashboard"
-        element={
-          <PrivateRoute allowedRoles={["OWNER"]}>
-            <OwnerDashboard />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/owner/dashboard"
-        element={
-          <PrivateRoute allowedRoles={["OWNER"]}>
-            <OwnerDashboard />
-          </PrivateRoute>
-        }
-      />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <ToastProvider>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/coffee-shops" element={<CoffeeShopExplorer />} />
+        <Route path="/coffee-shops/:slug" element={<CoffeeShopDetail />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute allowedRoles={["OWNER"]}>
+              <OwnerDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/owner/dashboard"
+          element={
+            <PrivateRoute allowedRoles={["OWNER"]}>
+              <OwnerDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ToastProvider>
   );
 }
