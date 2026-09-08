@@ -38,11 +38,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div
             key={t.id}
             className={`pointer-events-auto flex items-center justify-between rounded-xl px-4 py-3 shadow-lg text-sm font-medium transition-all animate-slide-in ${
-              t.type === "success"
-                ? "bg-emerald-600 text-white"
-                : t.type === "error"
-                ? "bg-red-600 text-white"
-                : "bg-espresso text-cream"
+               t.type === "success"
+                 ? "bg-emerald-600 text-white"
+                 : t.type === "error"
+                 ? "bg-red-600 text-white"
+                 : "bg-zinc-900 text-zinc-100 border border-zinc-700"
             }`}
           >
             <span>{t.message}</span>
