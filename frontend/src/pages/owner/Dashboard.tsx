@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../../layouts/MainLayout";
 import { useAuth } from "../../hooks/useAuth";
-import { getOwnerCoffeeShop, createMenu, createCoffeeShop, ApiError, type ApiOwnerShop } from "../../services/coffeeShop";
+import {
+  getOwnerCoffeeShop,
+  createMenu,
+  createCoffeeShop,
+  updateCoffeeShop,
+  deleteCoffeeShop,
+  updateMenu,
+  deleteMenu,
+  ApiError,
+  type ApiOwnerShop,
+} from "../../services/coffeeShop";
 
 export default function OwnerDashboard() {
   const { user, token, logout } = useAuth();
@@ -21,6 +31,20 @@ export default function OwnerDashboard() {
   const [creatingShop, setCreatingShop] = useState(false);
   const [createShopError, setCreateShopError] = useState("");
 
+  // Form Edit Coffee Shop
+  const [isEditingShop, setIsEditingShop] = useState(false);
+  const [editShopName, setEditShopName] = useState("");
+  const [editShopDistrict, setEditShopDistrict] = useState("Sumbersari");
+  const [editShopAddress, setEditShopAddress] = useState("");
+  const [editShopPriceRange, setEditShopPriceRange] = useState("");
+  const [editShopOpeningHours, setEditShopOpeningHours] = useState("");
+  const [editShopDescription, setEditShopDescription] = useState("");
+  const [editShopPhone, setEditShopPhone] = useState("");
+  const [editShopInstagram, setEditShopInstagram] = useState("");
+  const [editShopStatus, setEditShopStatus] = useState<"OPEN" | "CLOSED" | "TEMPORARILY_CLOSED">("OPEN");
+  const [updatingShop, setUpdatingShop] = useState(false);
+  const [editShopError, setEditShopError] = useState("");
+
   // Form tambah menu
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [menuName, setMenuName] = useState("");
@@ -29,6 +53,15 @@ export default function OwnerDashboard() {
   const [menuDescription, setMenuDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+
+  // Form edit menu
+  const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
+  const [editMenuName, setEditMenuName] = useState("");
+  const [editMenuPrice, setEditMenuPrice] = useState("");
+  const [editMenuCategory, setEditMenuCategory] = useState("");
+  const [editMenuDescription, setEditMenuDescription] = useState("");
+  const [updatingMenu, setUpdatingMenu] = useState(false);
+  const [editMenuError, setEditMenuError] = useState("");
 
   const [fetchedToken, setFetchedToken] = useState<string | null>(null);
 
@@ -43,7 +76,20 @@ export default function OwnerDashboard() {
     setLoading(true);
     setError("");
     getOwnerCoffeeShop(token)
-      .then((data) => setShop(data))
+      .then((data) => {
+        setShop(data);
+        if (data) {
+          setEditShopName(data.name);
+          setEditShopDistrict(data.district);
+          setEditShopAddress(data.address);
+          setEditShopPriceRange(data.priceRange);
+          setEditShopOpeningHours(data.openingHours);
+          setEditShopDescription(data.description);
+          setEditShopPhone(data.phone || "");
+          setEditShopInstagram(data.instagram || "");
+          setEditShopStatus(data.status);
+        }
+      })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Gagal memuat data coffee shop"))
       .finally(() => setLoading(false));
   }, [token, fetchedToken]);
@@ -66,13 +112,66 @@ export default function OwnerDashboard() {
         instagram: shopInstagram || undefined,
       });
 
-      // Refresh data shop setelah berhasil dibuat
       const updated = await getOwnerCoffeeShop(token);
       setShop(updated);
+      if (updated) {
+        setEditShopName(updated.name);
+        setEditShopDistrict(updated.district);
+        setEditShopAddress(updated.address);
+        setEditShopPriceRange(updated.priceRange);
+        setEditShopOpeningHours(updated.openingHours);
+        setEditShopDescription(updated.description);
+        setEditShopPhone(updated.phone || "");
+        setEditShopInstagram(updated.instagram || "");
+        setEditShopStatus(updated.status);
+      }
     } catch (err: any) {
       setCreateShopError(err instanceof ApiError ? err.message : (err.message || "Gagal mendaftarkan coffee shop"));
     } finally {
       setCreatingShop(false);
+    }
+  }
+
+  async function handleUpdateShop(e: React.FormEvent) {
+    e.preventDefault();
+    if (!shop || !token) return;
+    setUpdatingShop(true);
+    setEditShopError("");
+
+    try {
+      await updateCoffeeShop(shop.id, token, {
+        name: editShopName,
+        district: editShopDistrict,
+        address: editShopAddress,
+        priceRange: editShopPriceRange,
+        openingHours: editShopOpeningHours,
+        description: editShopDescription,
+        phone: editShopPhone || undefined,
+        instagram: editShopInstagram || undefined,
+        status: editShopStatus,
+      });
+
+      const updated = await getOwnerCoffeeShop(token);
+      setShop(updated);
+      setIsEditingShop(false);
+    } catch (err: any) {
+      setEditShopError(err instanceof ApiError ? err.message : (err.message || "Gagal memperbarui coffee shop"));
+    } finally {
+      setUpdatingShop(false);
+    }
+  }
+
+  async function handleDeleteShop() {
+    if (!shop || !token) return;
+    if (!window.confirm("Apakah Anda yakin ingin menghapus coffee shop ini? Semua data menu dan ulasan terkait akan ikut terhapus.")) {
+      return;
+    }
+
+    try {
+      await deleteCoffeeShop(shop.id, token);
+      setShop(null);
+    } catch (err: any) {
+      alert(err instanceof ApiError ? err.message : "Gagal menghapus coffee shop");
     }
   }
 
@@ -95,20 +194,69 @@ export default function OwnerDashboard() {
         description: menuDescription || undefined,
       });
 
-      // Reset form & tutup modal/form
       setMenuName("");
       setMenuPrice("");
       setMenuCategory("");
       setMenuDescription("");
       setShowAddMenu(false);
 
-      // Refresh data shop untuk menampilkan menu baru
       const updated = await getOwnerCoffeeShop(token);
       setShop(updated);
     } catch (err: any) {
       setFormError(err instanceof ApiError ? err.message : (err.message || "Gagal menambahkan menu"));
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  function startEditMenu(item: { id: string; name: string; price: number; category?: string | null; description?: string | null }) {
+    setEditingMenuId(item.id);
+    setEditMenuName(item.name);
+    setEditMenuPrice(String(item.price));
+    setEditMenuCategory(item.category || "");
+    setEditMenuDescription(item.description || "");
+    setEditMenuError("");
+  }
+
+  async function handleUpdateMenu(e: React.FormEvent, menuId: string) {
+    e.preventDefault();
+    if (!shop || !token) return;
+    setUpdatingMenu(true);
+    setEditMenuError("");
+
+    try {
+      const priceNum = Number(editMenuPrice);
+      if (isNaN(priceNum) || priceNum < 0) {
+        throw new Error("Harga harus berupa angka valid.");
+      }
+
+      await updateMenu(shop.id, menuId, token, {
+        name: editMenuName,
+        price: priceNum,
+        category: editMenuCategory || undefined,
+        description: editMenuDescription || undefined,
+      });
+
+      setEditingMenuId(null);
+      const updated = await getOwnerCoffeeShop(token);
+      setShop(updated);
+    } catch (err: any) {
+      setEditMenuError(err instanceof ApiError ? err.message : (err.message || "Gagal memperbarui menu"));
+    } finally {
+      setUpdatingMenu(false);
+    }
+  }
+
+  async function handleDeleteMenu(menuId: string) {
+    if (!shop || !token) return;
+    if (!window.confirm("Apakah Anda yakin ingin menghapus menu ini?")) return;
+
+    try {
+      await deleteMenu(shop.id, menuId, token);
+      const updated = await getOwnerCoffeeShop(token);
+      setShop(updated);
+    } catch (err: any) {
+      alert(err instanceof ApiError ? err.message : "Gagal menghapus menu");
     }
   }
 
@@ -252,18 +400,165 @@ export default function OwnerDashboard() {
             <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-espresso/10">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <span className="rounded-full bg-terracotta/10 px-3 py-1 text-xs font-bold text-terracotta">
-                    {shop.status === "OPEN" ? "Buka" : "Tutup"}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-terracotta/10 px-3 py-1 text-xs font-bold text-terracotta">
+                      {shop.status === "OPEN" ? "Buka" : shop.status === "CLOSED" ? "Tutup" : "Tutup Sementara"}
+                    </span>
+                  </div>
                   <h2 className="mt-3 text-2xl font-black">{shop.name}</h2>
                   <p className="mt-1 text-sm text-espresso/65">⌖ {shop.address} ({shop.district})</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-black text-terracotta">★ {shop.rating ? shop.rating.toFixed(1) : "0.0"}</p>
-                  <p className="text-xs text-espresso/60">{shop.reviewCount} ulasan</p>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="text-lg font-black text-terracotta">★ {shop.rating ? shop.rating.toFixed(1) : "0.0"}</p>
+                    <p className="text-xs text-espresso/60">{shop.reviewCount} ulasan</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setIsEditingShop(!isEditingShop);
+                        setEditShopError("");
+                      }}
+                      className="rounded-xl border border-espresso/15 px-3 py-2 text-xs font-bold text-espresso hover:bg-espresso/5"
+                    >
+                      {isEditingShop ? "Tutup Edit" : "Edit Info"}
+                    </button>
+                    <button
+                      onClick={handleDeleteShop}
+                      className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-100"
+                    >
+                      Hapus Shop
+                    </button>
+                  </div>
                 </div>
               </div>
               <p className="mt-4 text-sm text-espresso/75 leading-relaxed">{shop.description}</p>
+              <div className="mt-4 flex flex-wrap gap-4 text-xs text-espresso/70">
+                <span>🕒 {shop.openingHours}</span>
+                <span>💰 {shop.priceRange}</span>
+                {shop.phone && <span>📞 {shop.phone}</span>}
+                {shop.instagram && <span>📷 {shop.instagram}</span>}
+              </div>
+
+              {/* Form Edit Coffee Shop */}
+              {isEditingShop && (
+                <form onSubmit={handleUpdateShop} className="mt-6 rounded-xl border border-espresso/15 bg-cream/30 p-5 space-y-4">
+                  <h4 className="font-bold text-espresso">Edit Informasi Coffee Shop</h4>
+                  {editShopError && <p className="text-sm text-red-600">{editShopError}</p>}
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-bold text-espresso/70 mb-1">Nama Coffee Shop *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editShopName}
+                        onChange={(e) => setEditShopName(e.target.value)}
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-espresso/70 mb-1">Kecamatan (District) *</label>
+                      <select
+                        value={editShopDistrict}
+                        onChange={(e) => setEditShopDistrict(e.target.value)}
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                      >
+                        <option value="Sumbersari">Sumbersari</option>
+                        <option value="Kaliwates">Kaliwates</option>
+                        <option value="Patrang">Patrang</option>
+                        <option value="Ajung">Ajung</option>
+                        <option value="Arjasa">Arjasa</option>
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-espresso/70 mb-1">Alamat Lengkap *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editShopAddress}
+                        onChange={(e) => setEditShopAddress(e.target.value)}
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-espresso/70 mb-1">Kisaran Harga *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editShopPriceRange}
+                        onChange={(e) => setEditShopPriceRange(e.target.value)}
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-espresso/70 mb-1">Jam Operasional *</label>
+                      <input
+                        type="text"
+                        required
+                        value={editShopOpeningHours}
+                        onChange={(e) => setEditShopOpeningHours(e.target.value)}
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-espresso/70 mb-1">Status Operasional *</label>
+                      <select
+                        value={editShopStatus}
+                        onChange={(e) => setEditShopStatus(e.target.value as any)}
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                      >
+                        <option value="OPEN">Buka (OPEN)</option>
+                        <option value="CLOSED">Tutup (CLOSED)</option>
+                        <option value="TEMPORARILY_CLOSED">Tutup Sementara (TEMPORARILY_CLOSED)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-espresso/70 mb-1">No. Telepon / WhatsApp</label>
+                      <input
+                        type="text"
+                        value={editShopPhone}
+                        onChange={(e) => setEditShopPhone(e.target.value)}
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-espresso/70 mb-1">Deskripsi *</label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={editShopDescription}
+                        onChange={(e) => setEditShopDescription(e.target.value)}
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-espresso/70 mb-1">Instagram</label>
+                      <input
+                        type="text"
+                        value={editShopInstagram}
+                        onChange={(e) => setEditShopInstagram(e.target.value)}
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingShop(false)}
+                      className="rounded-xl border border-espresso/15 px-4 py-2 text-sm font-bold text-espresso hover:bg-espresso/5"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={updatingShop}
+                      className="rounded-xl bg-terracotta px-4 py-2 text-sm font-bold text-white hover:bg-terracotta/90 disabled:opacity-50"
+                    >
+                      {updatingShop ? "Menyimpan..." : "Simpan Perubahan"}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
 
             {/* List Menu & Tombol Tambah */}
@@ -359,23 +654,97 @@ export default function OwnerDashboard() {
                 ) : (
                   <div className="divide-y divide-espresso/10 rounded-xl border border-espresso/10 bg-white px-4">
                     {shop.menus.map((item) => (
-                      <div key={item.id} className="flex flex-wrap items-center justify-between gap-4 py-4 text-sm">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <b className="text-base text-espresso">{item.name}</b>
-                            {item.category && (
-                              <span className="rounded-md bg-espresso/5 px-2 py-0.5 text-xs font-bold text-espresso/70">
-                                {item.category}
-                              </span>
-                            )}
+                      <div key={item.id} className="py-4">
+                        {editingMenuId === item.id ? (
+                          <form onSubmit={(e) => handleUpdateMenu(e, item.id)} className="space-y-3 bg-cream/20 p-4 rounded-xl border border-espresso/10">
+                            <h5 className="font-bold text-espresso text-sm">Edit Menu</h5>
+                            {editMenuError && <p className="text-xs text-red-600">{editMenuError}</p>}
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <input
+                                type="text"
+                                required
+                                value={editMenuName}
+                                onChange={(e) => setEditMenuName(e.target.value)}
+                                placeholder="Nama Menu"
+                                className="rounded-lg border border-espresso/15 bg-white px-3 py-2 text-sm outline-none focus:border-terracotta"
+                              />
+                              <input
+                                type="number"
+                                required
+                                min="0"
+                                value={editMenuPrice}
+                                onChange={(e) => setEditMenuPrice(e.target.value)}
+                                placeholder="Harga (Rp)"
+                                className="rounded-lg border border-espresso/15 bg-white px-3 py-2 text-sm outline-none focus:border-terracotta"
+                              />
+                              <input
+                                type="text"
+                                value={editMenuCategory}
+                                onChange={(e) => setEditMenuCategory(e.target.value)}
+                                placeholder="Kategori"
+                                className="rounded-lg border border-espresso/15 bg-white px-3 py-2 text-sm outline-none focus:border-terracotta"
+                              />
+                              <input
+                                type="text"
+                                value={editMenuDescription}
+                                onChange={(e) => setEditMenuDescription(e.target.value)}
+                                placeholder="Deskripsi"
+                                className="rounded-lg border border-espresso/15 bg-white px-3 py-2 text-sm outline-none focus:border-terracotta"
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setEditingMenuId(null)}
+                                className="rounded-lg border border-espresso/15 px-3 py-1.5 text-xs font-bold text-espresso hover:bg-espresso/5"
+                              >
+                                Batal
+                              </button>
+                              <button
+                                type="submit"
+                                disabled={updatingMenu}
+                                className="rounded-lg bg-terracotta px-3 py-1.5 text-xs font-bold text-white hover:bg-terracotta/90 disabled:opacity-50"
+                              >
+                                {updatingMenu ? "Menyimpan..." : "Simpan"}
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <b className="text-base text-espresso">{item.name}</b>
+                                {item.category && (
+                                  <span className="rounded-md bg-espresso/5 px-2 py-0.5 text-xs font-bold text-espresso/70">
+                                    {item.category}
+                                  </span>
+                                )}
+                              </div>
+                              {item.description && (
+                                <p className="text-xs text-espresso/65">{item.description}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="font-bold text-terracotta">
+                                Rp{item.price.toLocaleString("id-ID")}
+                              </div>
+                              <div className="flex gap-1.5">
+                                <button
+                                  onClick={() => startEditMenu(item)}
+                                  className="rounded-lg border border-espresso/15 px-2.5 py-1 text-xs font-bold text-espresso hover:bg-espresso/5"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteMenu(item.id)}
+                                  className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700 hover:bg-red-100"
+                                >
+                                  Hapus
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                          {item.description && (
-                            <p className="text-xs text-espresso/65">{item.description}</p>
-                          )}
-                        </div>
-                        <div className="font-bold text-terracotta">
-                          Rp{item.price.toLocaleString("id-ID")}
-                        </div>
+                        )}
                       </div>
                     ))}
                   </div>

@@ -161,3 +161,82 @@ export async function createCoffeeShop(
   }
   return payload.data;
 }
+
+export async function updateCoffeeShop(
+  coffeeShopId: string,
+  token: string,
+  input: {
+    name?: string;
+    description?: string;
+    address?: string;
+    district?: string;
+    priceRange?: string;
+    openingHours?: string;
+    phone?: string;
+    instagram?: string;
+    status?: "OPEN" | "CLOSED" | "TEMPORARILY_CLOSED";
+  }
+) {
+  const response = await fetch(`${apiUrl}/coffee-shops/${coffeeShopId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  });
+  const payload = (await response.json()) as { success: boolean; data: any; message?: string };
+  if (!response.ok || !payload.success) {
+    throw new ApiError(payload.success ? "Permintaan gagal" : (payload.message || "Gagal memperbarui coffee shop"));
+  }
+  return payload.data;
+}
+
+export async function deleteCoffeeShop(coffeeShopId: string, token: string) {
+  const response = await fetch(`${apiUrl}/coffee-shops/${coffeeShopId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({ message: "Gagal menghapus coffee shop" }));
+    throw new ApiError(payload.message || "Gagal menghapus coffee shop");
+  }
+  return true;
+}
+
+export async function updateMenu(
+  coffeeShopId: string,
+  menuId: string,
+  token: string,
+  input: { name?: string; category?: string; description?: string; price?: number; image?: string }
+) {
+  const response = await fetch(`${apiUrl}/coffee-shops/${coffeeShopId}/menus/${menuId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  });
+  const payload = (await response.json()) as { success: boolean; data: any; message?: string };
+  if (!response.ok || !payload.success) {
+    throw new ApiError(payload.success ? "Permintaan gagal" : (payload.message || "Gagal memperbarui menu"));
+  }
+  return payload.data;
+}
+
+export async function deleteMenu(coffeeShopId: string, menuId: string, token: string) {
+  const response = await fetch(`${apiUrl}/coffee-shops/${coffeeShopId}/menus/${menuId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({ message: "Gagal menghapus menu" }));
+    throw new ApiError(payload.message || "Gagal menghapus menu");
+  }
+  return true;
+}
