@@ -17,6 +17,20 @@ describe('Navbar Component', () => {
     expect(screen.getByText('Masuk')).toBeInTheDocument()
   })
 
+  it('ensures navigation links explicitly have text-zinc-300 class to prevent contrast regression', () => {
+    render(
+      <BrowserRouter>
+        <Navbar />
+      </BrowserRouter>
+    )
+
+    const homeLink = screen.getByText('Beranda')
+    const exploreLink = screen.getByText('Jelajahi')
+
+    expect(homeLink).toHaveClass('text-zinc-300')
+    expect(exploreLink).toHaveClass('text-zinc-300')
+  })
+
   it('toggles mobile menu when hamburger button is clicked', () => {
     render(
       <BrowserRouter>
