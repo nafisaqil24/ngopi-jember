@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
-import { getCoffeeShopBySlug, getImageUrl, ApiError, type ApiCoffeeShopDetail } from "../services/coffeeShop";
+import { getCoffeeShopBySlug, getImageUrl, createReview, ApiError, type ApiCoffeeShopDetail } from "../services/coffeeShop";
+import { useAuth } from "../hooks/useAuth";
 import NotFound from "./NotFound";
 
 // Halaman detail coffee shop, sekarang fetch data ASLI dari backend
@@ -61,9 +62,39 @@ function buildInstagramUrl(handle: string | null) {
 
 export default function CoffeeShopDetail() {
   const { slug } = useParams();
+  const { user, token } = useAuth();
   const [shop, setShop] = useState<ApiCoffeeShopDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState("");
+  const [reviewSuccess, setReviewSuccess] = useState("");
+
+  async function handleReviewSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!token || !shop) return;
+    setSubmittingReview(true);
+    setReviewError("");
+    setReviewSuccess("");
+
+    try {
+      await createReview(shop.id, token, {
+        rating: reviewRating,
+        comment: reviewComment,
+      });
+      setReviewComment("");
+      setReviewSuccess("Ulasan berhasil dikirim!");
+      const updated = await getCoffeeShopBySlug(slug!);
+      setShop(updated.data);
+    } catch (err: any) {
+      setReviewError(err instanceof ApiError ? err.message : "Gagal mengirim ulasan");
+    } finally {
+      setSubmittingReview(false);
+    }
+  }
 
   useEffect(() => {
     if (!slug) return;
@@ -188,6 +219,74 @@ export default function CoffeeShopDetail() {
                   ))}
                 </div>
               )}
+            </Block>
+
+            <Block title={`Ulasan & Rating (${shop.reviews.length})`}>
+              <div className="space-y-6">
+                {/* Form Ulasan */}
+                {user ? (
+                  <form onSubmit={handleReviewSubmit} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-espresso/10 space-y-4">
+                    <h3 className="font-black text-lg">Tulis Ulasan Kamu</h3>
+                    {reviewError && <p className="text-sm text-red-600">{reviewError}</p>}
+                    {reviewSuccess && <p className="text-sm text-green-700">{reviewSuccess}</p>}
+                    <div>
+                      <label className="block text-xs font-bold text-espresso/70 mb-1">Rating Bintang *</label>
+                      <select
+                        value={reviewRating}
+                        onChange={(e) => setReviewRating(Number(e.target.value))}
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                      >
+                        <option value="5">★★★★★ (5 - Sangat Baik)</option>
+                        <option value="4">★★★★☆ (4 - Baik)</option>
+                        <option value="3">★★★☆☆ (3 - Cukup)</option>
+                        <option value="2">★★☆☆☆ (2 - Kurang)</option>
+                        <option value="1">★☆☆☆☆ (1 - Buruk)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-espresso/70 mb-1">Komentar * (min 3 karakter)</label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                        placeholder="Bagikan pengalamanmu ngopi di sini..."
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={submittingReview}
+                      className="rounded-xl bg-terracotta px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-terracotta/90 disabled:opacity-50"
+                    >
+                      {submittingReview ? "Mengirim..." : "Kirim Ulasan"}
+                    </button>
+                  </form>
+                ) : (
+                  <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-espresso/10 text-center text-sm text-espresso/70">
+                    Silakan <Link to="/login" className="font-bold text-terracotta underline">login</Link> terlebih dahulu untuk menulis ulasan.
+                  </div>
+                )}
+
+                {/* List Ulasan */}
+                {shop.reviews.length === 0 ? (
+                  <p className="text-sm text-espresso/60">Belum ada ulasan untuk coffee shop ini.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {shop.reviews.map((review) => (
+                      <div key={review.id} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-espresso/10 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <b className="text-espresso">{review.user.name}</b>
+                          <span className="text-terracotta font-bold text-sm">
+                            {"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-espresso/80 leading-relaxed">{review.comment}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </Block>
           </section>
 

@@ -19,9 +19,9 @@ export default function CoffeeShopCard({ coffeeShop }: CoffeeShopCardProps) {
   return (
     <Link
       to={`/coffee-shops/${coffeeShop.slug}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-espresso/10 bg-white transition hover:-translate-y-1 hover:shadow-lg"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-espresso/10 bg-white dark:bg-zinc-900 dark:border-zinc-800 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
     >
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-cream">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-cream dark:bg-zinc-800">
         <img
           src={coffeeShop.imageUrl}
           alt={coffeeShop.name}
@@ -37,19 +37,19 @@ export default function CoffeeShopCard({ coffeeShop }: CoffeeShopCardProps) {
 
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-espresso">
+          <h3 className="font-semibold text-espresso dark:text-zinc-100">
             {coffeeShop.name}
           </h3>
-          <div className="flex shrink-0 items-center gap-1 text-sm font-medium text-espresso/80">
+          <div className="flex shrink-0 items-center gap-1 text-sm font-medium text-espresso/80 dark:text-zinc-300">
             <span aria-hidden>★</span>
             {coffeeShop.rating.toFixed(1)}
-            <span className="text-espresso/40">({coffeeShop.reviewCount})</span>
+            <span className="text-espresso/40 dark:text-zinc-500">({coffeeShop.reviewCount})</span>
           </div>
         </div>
 
-        <p className="text-sm text-espresso/60">{coffeeShop.district}</p>
+        <p className="text-sm text-espresso/60 dark:text-zinc-400">{coffeeShop.district}</p>
 
-        <p className="text-sm font-medium text-espresso/80">
+        <p className="text-sm font-medium text-espresso/80 dark:text-zinc-300">
           {coffeeShop.priceRange}
         </p>
 
@@ -57,14 +57,14 @@ export default function CoffeeShopCard({ coffeeShop }: CoffeeShopCardProps) {
           {coffeeShop.facilities.slice(0, 3).map((facility) => (
             <span
               key={facility}
-              className="rounded-full bg-cream px-2.5 py-1 text-xs text-espresso/70"
+              className="rounded-full bg-cream dark:bg-zinc-800 px-2.5 py-1 text-xs text-espresso/70 dark:text-zinc-300"
             >
               {facility}
             </span>
           ))}
         </div>
 
-        <span className="mt-auto pt-2 text-sm font-semibold text-terracotta">
+        <span className="mt-auto pt-2 text-sm font-semibold text-terracotta dark:text-emerald-400">
           Lihat Detail
         </span>
       </div>

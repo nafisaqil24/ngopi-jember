@@ -282,3 +282,23 @@ export async function deleteMenu(coffeeShopId: string, menuId: string, token: st
   }
   return true;
 }
+
+export async function createReview(
+  coffeeShopId: string,
+  token: string,
+  input: { rating: number; comment: string }
+) {
+  const response = await fetch(`${apiUrl}/coffee-shops/${coffeeShopId}/reviews`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  });
+  const payload = (await response.json()) as { success: boolean; data: any; message?: string };
+  if (!response.ok || !payload.success) {
+    throw new ApiError(payload.success ? "Permintaan gagal" : (payload.message || "Gagal mengirim ulasan"));
+  }
+  return payload.data;
+}

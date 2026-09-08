@@ -5,10 +5,12 @@ import { prisma } from '../lib/prisma.js'
 import { authenticate, authorize, type AuthenticatedRequest } from '../middleware/auth.js'
 import { upload } from '../middleware/upload.js'
 import { menuRouter } from './menu.routes.js'
+import { reviewRouter } from './review.routes.js'
 
 export const coffeeShopRouter = Router()
 
 coffeeShopRouter.use('/:coffeeShopId/menus', menuRouter)
+coffeeShopRouter.use('/:coffeeShopId/reviews', reviewRouter)
 
 const listQuery = z.object({
   search: z.string().trim().max(100).optional(),
