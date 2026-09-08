@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
 import CoffeeShopCard from "../components/coffeeshop/CoffeeShopCard";
-import { listCoffeeShops, listFacilities, ApiError, type ApiCoffeeShopCard, type ApiFacility } from "../services/coffeeShop";
+import { listCoffeeShops, listFacilities, getImageUrl, ApiError, type ApiCoffeeShopCard, type ApiFacility } from "../services/coffeeShop";
 import type { CoffeeShop } from "../types/coffeeShop";
 
 // Halaman pencarian & filter coffee shop, sekarang fetch data ASLI dari
@@ -50,7 +50,7 @@ function mapToCoffeeShop(item: ApiCoffeeShopCard): CoffeeShop {
     rating: item.rating ?? 0,
     reviewCount: item.reviewCount,
     facilities: item.facilities.map((facility) => facility.name),
-    imageUrl: item.image ?? "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=85",
+    imageUrl: getImageUrl(item.image) ?? "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=85",
     isFeatured: item.isFeatured,
     isOpenNow: item.status === "OPEN",
   };

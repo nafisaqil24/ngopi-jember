@@ -1,5 +1,6 @@
 import cors from 'cors'
 import express, { type NextFunction, type Request, type Response } from 'express'
+import path from 'path'
 import { authRouter } from './routes/auth.routes.js'
 import { coffeeShopRouter } from './routes/coffee-shop.routes.js'
 import { ownerRouter } from './routes/owner.routes.js'
@@ -26,6 +27,7 @@ app.use(cors({
   }
 }))
 app.use(express.json())
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 
 app.get('/api/health', (_request, response) => response.json({ success: true, data: { status: 'ok' } }))
 app.use('/api/auth', authRouter)

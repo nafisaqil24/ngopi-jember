@@ -9,6 +9,7 @@ import {
   deleteCoffeeShop,
   updateMenu,
   deleteMenu,
+  getImageUrl,
   ApiError,
   type ApiOwnerShop,
 } from "../../services/coffeeShop";
@@ -28,6 +29,7 @@ export default function OwnerDashboard() {
   const [shopDescription, setShopDescription] = useState("");
   const [shopPhone, setShopPhone] = useState("");
   const [shopInstagram, setShopInstagram] = useState("");
+  const [shopImage, setShopImage] = useState<File | null>(null);
   const [creatingShop, setCreatingShop] = useState(false);
   const [createShopError, setCreateShopError] = useState("");
 
@@ -42,6 +44,7 @@ export default function OwnerDashboard() {
   const [editShopPhone, setEditShopPhone] = useState("");
   const [editShopInstagram, setEditShopInstagram] = useState("");
   const [editShopStatus, setEditShopStatus] = useState<"OPEN" | "CLOSED" | "TEMPORARILY_CLOSED">("OPEN");
+  const [editShopImage, setEditShopImage] = useState<File | null>(null);
   const [updatingShop, setUpdatingShop] = useState(false);
   const [editShopError, setEditShopError] = useState("");
 
@@ -51,6 +54,7 @@ export default function OwnerDashboard() {
   const [menuPrice, setMenuPrice] = useState("");
   const [menuCategory, setMenuCategory] = useState("");
   const [menuDescription, setMenuDescription] = useState("");
+  const [menuImage, setMenuImage] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -60,6 +64,7 @@ export default function OwnerDashboard() {
   const [editMenuPrice, setEditMenuPrice] = useState("");
   const [editMenuCategory, setEditMenuCategory] = useState("");
   const [editMenuDescription, setEditMenuDescription] = useState("");
+  const [editMenuImage, setEditMenuImage] = useState<File | null>(null);
   const [updatingMenu, setUpdatingMenu] = useState(false);
   const [editMenuError, setEditMenuError] = useState("");
 
@@ -110,6 +115,7 @@ export default function OwnerDashboard() {
         description: shopDescription,
         phone: shopPhone || undefined,
         instagram: shopInstagram || undefined,
+        image: shopImage || undefined,
       });
 
       const updated = await getOwnerCoffeeShop(token);
@@ -149,6 +155,7 @@ export default function OwnerDashboard() {
         phone: editShopPhone || undefined,
         instagram: editShopInstagram || undefined,
         status: editShopStatus,
+        image: editShopImage || undefined,
       });
 
       const updated = await getOwnerCoffeeShop(token);
@@ -192,12 +199,14 @@ export default function OwnerDashboard() {
         price: priceNum,
         category: menuCategory || undefined,
         description: menuDescription || undefined,
+        image: menuImage || undefined,
       });
 
       setMenuName("");
       setMenuPrice("");
       setMenuCategory("");
       setMenuDescription("");
+      setMenuImage(null);
       setShowAddMenu(false);
 
       const updated = await getOwnerCoffeeShop(token);
@@ -215,6 +224,7 @@ export default function OwnerDashboard() {
     setEditMenuPrice(String(item.price));
     setEditMenuCategory(item.category || "");
     setEditMenuDescription(item.description || "");
+    setEditMenuImage(null);
     setEditMenuError("");
   }
 
@@ -235,6 +245,7 @@ export default function OwnerDashboard() {
         price: priceNum,
         category: editMenuCategory || undefined,
         description: editMenuDescription || undefined,
+        image: editMenuImage || undefined,
       });
 
       setEditingMenuId(null);
@@ -381,6 +392,15 @@ export default function OwnerDashboard() {
                   className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-3 text-sm outline-none focus:border-terracotta"
                 />
               </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-espresso/70 mb-1">Foto Coffee Shop</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setShopImage(e.target.files?.[0] || null)}
+                  className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-terracotta file:text-white hover:file:bg-terracotta/90"
+                />
+              </div>
               <div className="sm:col-span-2 pt-2">
                 <button
                   type="submit"
@@ -433,6 +453,15 @@ export default function OwnerDashboard() {
                 </div>
               </div>
               <p className="mt-4 text-sm text-espresso/75 leading-relaxed">{shop.description}</p>
+              {shop.images?.[0]?.imageUrl && (
+                <div className="mt-4">
+                  <img
+                    src={getImageUrl(shop.images[0].imageUrl)!}
+                    alt={shop.name}
+                    className="h-56 w-full rounded-2xl object-cover"
+                  />
+                </div>
+              )}
               <div className="mt-4 flex flex-wrap gap-4 text-xs text-espresso/70">
                 <span>🕒 {shop.openingHours}</span>
                 <span>💰 {shop.priceRange}</span>
@@ -540,6 +569,15 @@ export default function OwnerDashboard() {
                         className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
                       />
                     </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-espresso/70 mb-1">Upload Foto Baru (Opsional)</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setEditShopImage(e.target.files?.[0] || null)}
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-terracotta file:text-white hover:file:bg-terracotta/90"
+                      />
+                    </div>
                   </div>
                   <div className="flex justify-end gap-2 pt-2">
                     <button
@@ -625,6 +663,15 @@ export default function OwnerDashboard() {
                         className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
                       />
                     </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-espresso/70 mb-1">Foto Menu (Opsional)</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setMenuImage(e.target.files?.[0] || null)}
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-terracotta file:text-white hover:file:bg-terracotta/90"
+                      />
+                    </div>
                   </div>
                   <div className="flex justify-end gap-2 pt-2">
                     <button
@@ -691,6 +738,12 @@ export default function OwnerDashboard() {
                                 placeholder="Deskripsi"
                                 className="rounded-lg border border-espresso/15 bg-white px-3 py-2 text-sm outline-none focus:border-terracotta"
                               />
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => setEditMenuImage(e.target.files?.[0] || null)}
+                                className="w-full sm:col-span-2 rounded-lg border border-espresso/15 bg-white px-3 py-2 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-terracotta file:text-white hover:file:bg-terracotta/90"
+                              />
                             </div>
                             <div className="flex justify-end gap-2">
                               <button
@@ -711,18 +764,27 @@ export default function OwnerDashboard() {
                           </form>
                         ) : (
                           <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <b className="text-base text-espresso">{item.name}</b>
-                                {item.category && (
-                                  <span className="rounded-md bg-espresso/5 px-2 py-0.5 text-xs font-bold text-espresso/70">
-                                    {item.category}
-                                  </span>
+                            <div className="flex items-center gap-3">
+                              {item.image && (
+                                <img
+                                  src={getImageUrl(item.image)!}
+                                  alt={item.name}
+                                  className="h-12 w-12 rounded-lg object-cover"
+                                />
+                              )}
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <b className="text-base text-espresso">{item.name}</b>
+                                  {item.category && (
+                                    <span className="rounded-md bg-espresso/5 px-2 py-0.5 text-xs font-bold text-espresso/70">
+                                      {item.category}
+                                    </span>
+                                  )}
+                                </div>
+                                {item.description && (
+                                  <p className="text-xs text-espresso/65">{item.description}</p>
                                 )}
                               </div>
-                              {item.description && (
-                                <p className="text-xs text-espresso/65">{item.description}</p>
-                              )}
                             </div>
                             <div className="flex items-center gap-4">
                               <div className="font-bold text-terracotta">

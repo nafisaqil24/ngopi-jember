@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
-import { getCoffeeShopBySlug, ApiError, type ApiCoffeeShopDetail } from "../services/coffeeShop";
+import { getCoffeeShopBySlug, getImageUrl, ApiError, type ApiCoffeeShopDetail } from "../services/coffeeShop";
 import NotFound from "./NotFound";
 
 // Halaman detail coffee shop, sekarang fetch data ASLI dari backend
@@ -102,7 +102,7 @@ export default function CoffeeShopDetail() {
 
         <div className="mt-5">
           <img
-            src={shop.image ?? "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=85"}
+            src={getImageUrl(shop.images?.[0]?.imageUrl) ?? "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=85"}
             alt={shop.name}
             className="h-80 w-full rounded-3xl object-cover"
           />
@@ -158,9 +158,32 @@ export default function CoffeeShopDetail() {
               ) : (
                 <div className="divide-y divide-espresso/10 rounded-2xl bg-white px-5 shadow-sm">
                   {shop.menus.map((item) => (
-                    <div key={item.id} className="flex justify-between py-4 text-sm">
-                      <b>{item.name}</b>
-                      <span>Rp{item.price.toLocaleString("id-ID")}</span>
+                    <div key={item.id} className="flex items-center justify-between py-4 text-sm gap-4">
+                      <div className="flex items-center gap-3">
+                        {item.image && (
+                          <img
+                            src={getImageUrl(item.image)!}
+                            alt={item.name}
+                            className="h-12 w-12 rounded-lg object-cover"
+                          />
+                        )}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <b className="text-espresso">{item.name}</b>
+                            {item.category && (
+                              <span className="rounded-md bg-espresso/5 px-2 py-0.5 text-xs font-bold text-espresso/70">
+                                {item.category}
+                              </span>
+                            )}
+                          </div>
+                          {item.description && (
+                            <p className="text-xs text-espresso/65">{item.description}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="font-bold text-terracotta shrink-0">
+                        Rp{item.price.toLocaleString("id-ID")}
+                      </div>
                     </div>
                   ))}
                 </div>

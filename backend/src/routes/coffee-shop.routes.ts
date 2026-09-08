@@ -3,6 +3,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authenticate, authorize, type AuthenticatedRequest } from '../middleware/auth.js'
+import { upload } from '../middleware/upload.js'
 import { menuRouter } from './menu.routes.js'
 
 export const coffeeShopRouter = Router()
@@ -28,8 +29,8 @@ const createShop = z.object({
   openingHours: z.string().trim().min(1).max(200),
   phone: z.string().trim().max(30).optional(),
   instagram: z.string().trim().max(200).optional(),
-  latitude: z.number().min(-90).max(90).optional(),
-  longitude: z.number().min(-180).max(180).optional(),
+  latitude: z.coerce.number().min(-90).max(90).optional(),
+  longitude: z.coerce.number().min(-180).max(180).optional(),
 })
 
 const updateShop = createShop.partial()
@@ -106,20 +107,26 @@ coffeeShopRouter.get('/:slug', async (request, response, next) => {
   } catch (error) { return next(error) }
 })
 
-coffeeShopRouter.post('/', authenticate, authorize('OWNER', 'ADMIN'), async (request: AuthenticatedRequest, response, next) => {
+coffeeShopRouter.post('/', authenticate, authorize('OWNER', 'ADMIN'), upload.single('image'), async (request: AuthenticatedRequest, response, next) => {
   try {
     const parsed = createShop.safeParse(request.body)
     if (!parsed.success) return response.status(400).json({ success: false, message: 'Data coffee shop tidak valid', errors: parsed.error.flatten().fieldErrors })
 
     const slug = await uniqueSlug(parsed.data.name)
     const shop = await prisma.coffeeShop.create({
-      data: { ...parsed.data, slug, ownerId: request.auth!.userId },
+      data: {
+        ...parsed.data,
+        slug,
+        ownerId: request.auth!.userId,
+        ...(request.file ? { images: { create: { imageUrl: `/uploads/${request.file.filename}` } } } : {}),
+      },
+      include: { images: true },
     })
     return response.status(201).json({ success: true, data: shop })
   } catch (error) { return next(error) }
 })
 
-coffeeShopRouter.put('/:id', authenticate, authorize('OWNER', 'ADMIN'), async (request: AuthenticatedRequest, response, next) => {
+coffeeShopRouter.put('/:id', authenticate, authorize('OWNER', 'ADMIN'), upload.single('image'), async (request: AuthenticatedRequest, response, next) => {
   try {
     const parsed = updateShop.safeParse(request.body)
     if (!parsed.success) return response.status(400).json({ success: false, message: 'Data coffee shop tidak valid', errors: parsed.error.flatten().fieldErrors })
@@ -128,12 +135,21 @@ coffeeShopRouter.put('/:id', authenticate, authorize('OWNER', 'ADMIN'), async (r
     if (!shop) return response.status(404).json({ success: false, message: 'Coffee shop tidak ditemukan' })
     if (forbidden) return response.status(403).json({ success: false, message: 'Anda tidak memiliki akses untuk mengubah coffee shop ini' })
 
-    const data = { ...parsed.data }
+    const data: any = { ...parsed.data }
     if (data.name && data.name !== shop.name) {
-      Object.assign(data, { slug: await uniqueSlug(data.name) })
+      data.slug = await uniqueSlug(data.name)
     }
 
-    const updated = await prisma.coffeeShop.update({ where: { id: shop.id }, data })
+    if (request.file) {
+      await prisma.coffeeShopImage.create({
+        data: {
+          coffeeShopId: shop.id,
+          imageUrl: `/uploads/${request.file.filename}`,
+        },
+      })
+    }
+
+    const updated = await prisma.coffeeShop.update({ where: { id: shop.id }, data, include: { images: true } })
     return response.json({ success: true, data: updated })
   } catch (error) { return next(error) }
 })

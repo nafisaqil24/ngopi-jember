@@ -61,6 +61,13 @@ export type ListParams = {
 
 export class ApiError extends Error {}
 
+export function getImageUrl(url?: string | null) {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  const backendBase = apiUrl.replace(/\/api$/, "");
+  return `${backendBase}${url}`;
+}
+
 async function get<T>(path: string): Promise<{ data: T; meta?: ListMeta }> {
   const response = await fetch(`${apiUrl}${path}`);
   const payload = (await response.json()) as ApiResponse<T> & { meta?: ListMeta };
@@ -117,15 +124,21 @@ export async function getOwnerCoffeeShop(token: string) {
 export async function createMenu(
   coffeeShopId: string,
   token: string,
-  input: { name: string; category?: string; description?: string; price: number; image?: string }
+  input: { name: string; category?: string; description?: string; price: number; image?: File }
 ) {
+  const formData = new FormData();
+  formData.set("name", input.name);
+  if (input.category) formData.set("category", input.category);
+  if (input.description) formData.set("description", input.description);
+  formData.set("price", String(input.price));
+  if (input.image) formData.set("image", input.image);
+
   const response = await fetch(`${apiUrl}/coffee-shops/${coffeeShopId}/menus`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(input),
+    body: formData,
   });
   const payload = (await response.json()) as { success: boolean; data: any; message?: string; errors?: any };
   if (!response.ok || !payload.success) {
@@ -145,15 +158,26 @@ export async function createCoffeeShop(
     openingHours: string;
     phone?: string;
     instagram?: string;
+    image?: File;
   }
 ) {
+  const formData = new FormData();
+  formData.set("name", input.name);
+  formData.set("description", input.description);
+  formData.set("address", input.address);
+  formData.set("district", input.district);
+  formData.set("priceRange", input.priceRange);
+  formData.set("openingHours", input.openingHours);
+  if (input.phone) formData.set("phone", input.phone);
+  if (input.instagram) formData.set("instagram", input.instagram);
+  if (input.image) formData.set("image", input.image);
+
   const response = await fetch(`${apiUrl}/coffee-shops`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(input),
+    body: formData,
   });
   const payload = (await response.json()) as { success: boolean; data: any; message?: string };
   if (!response.ok || !payload.success) {
@@ -175,15 +199,27 @@ export async function updateCoffeeShop(
     phone?: string;
     instagram?: string;
     status?: "OPEN" | "CLOSED" | "TEMPORARILY_CLOSED";
+    image?: File;
   }
 ) {
+  const formData = new FormData();
+  if (input.name) formData.set("name", input.name);
+  if (input.description) formData.set("description", input.description);
+  if (input.address) formData.set("address", input.address);
+  if (input.district) formData.set("district", input.district);
+  if (input.priceRange) formData.set("priceRange", input.priceRange);
+  if (input.openingHours) formData.set("openingHours", input.openingHours);
+  if (input.phone !== undefined) formData.set("phone", input.phone);
+  if (input.instagram !== undefined) formData.set("instagram", input.instagram);
+  if (input.status) formData.set("status", input.status);
+  if (input.image) formData.set("image", input.image);
+
   const response = await fetch(`${apiUrl}/coffee-shops/${coffeeShopId}`, {
     method: "PUT",
     headers: {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(input),
+    body: formData,
   });
   const payload = (await response.json()) as { success: boolean; data: any; message?: string };
   if (!response.ok || !payload.success) {
@@ -210,15 +246,21 @@ export async function updateMenu(
   coffeeShopId: string,
   menuId: string,
   token: string,
-  input: { name?: string; category?: string; description?: string; price?: number; image?: string }
+  input: { name?: string; category?: string; description?: string; price?: number; image?: File }
 ) {
+  const formData = new FormData();
+  if (input.name) formData.set("name", input.name);
+  if (input.category !== undefined) formData.set("category", input.category);
+  if (input.description !== undefined) formData.set("description", input.description);
+  if (input.price !== undefined) formData.set("price", String(input.price));
+  if (input.image) formData.set("image", input.image);
+
   const response = await fetch(`${apiUrl}/coffee-shops/${coffeeShopId}/menus/${menuId}`, {
     method: "PUT",
     headers: {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(input),
+    body: formData,
   });
   const payload = (await response.json()) as { success: boolean; data: any; message?: string };
   if (!response.ok || !payload.success) {
