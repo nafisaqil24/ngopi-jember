@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/nemotron-3.5-lightning-free",
+  "small_model": "opencode/nemotron-3.5-lightning-free",
+  "effort": "high",
+  "provider": {
+    "google": {
+      "models": {
+        "gemini-3.5-flash-lite": {}
+      }
+    }
+  }
+}

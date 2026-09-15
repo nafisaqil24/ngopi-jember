@@ -1,5 +1,6 @@
 import { UserRole } from '@prisma/client'
 import { Router } from 'express'
+import rateLimit from 'express-rate-limit'
 import { z } from 'zod'
 import { authenticate, type AuthenticatedRequest } from '../middleware/auth.js'
 import { prisma } from '../lib/prisma.js'
@@ -7,6 +8,17 @@ import { comparePassword, hashPassword } from '../utils/password.js'
 import { createAccessToken } from '../utils/jwt.js'
 
 export const authRouter = Router()
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Terlalu banyak percobaan, coba lagi nanti',
+  },
+})
 
 const credentials = z.object({
   email: z.string().trim().email().max(254).transform(value => value.toLowerCase()),
@@ -25,7 +37,7 @@ const publicUser = (user: { id: string; name: string; email: string; role: UserR
   createdAt: user.createdAt,
 })
 
-authRouter.post('/register', async (request, response, next) => {
+authRouter.post('/register', authLimiter, async (request, response, next) => {
   try {
     const parsed = registration.safeParse(request.body)
     if (!parsed.success) return response.status(400).json({ success: false, message: 'Data pendaftaran tidak valid', errors: parsed.error.flatten().fieldErrors })
@@ -42,7 +54,7 @@ authRouter.post('/register', async (request, response, next) => {
   } catch (error) { return next(error) }
 })
 
-authRouter.post('/login', async (request, response, next) => {
+authRouter.post('/login', authLimiter, async (request, response, next) => {
   try {
     const parsed = credentials.safeParse(request.body)
     if (!parsed.success) return response.status(400).json({ success: false, message: 'Email atau password tidak valid' })

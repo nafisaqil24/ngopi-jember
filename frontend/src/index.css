@@ -1,44 +1,175 @@
 @import "tailwindcss";
 
 @theme {
-  --color-espresso: #18181b;
-  --color-cream: #f4f4f5;
-  --color-terracotta: #059669;
+  --font-sans: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --color-espresso: var(--espresso);
+  --color-cream: var(--cream);
+  --color-terracotta: var(--terracotta);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-primary: var(--primary);
+  --color-text-primary: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-border-subtle: var(--border-subtle);
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+}
+
+:root {
+  --espresso: #1c1917;
+  --cream: #fafaf9;
+  --terracotta: #d97706;
+  --canvas: #fafaf9;
+  --surface: #ffffff;
+  --surface-hover: #fefce8;
+  --primary: #d97706;
+  --text-primary: #1c1917;
+  --text-muted: #78716c;
+  --border-subtle: #e7e5e4;
 }
 
 * { box-sizing: border-box; }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   min-width: 320px;
-  background-color: var(--color-cream);
-  color: var(--color-espresso);
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  background-color: #fafaf9;
+  background-image: linear-gradient(to bottom, rgba(250, 250, 249, 0.92), rgba(255, 255, 255, 0.96)), url('https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=2000&q=80');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.dark {
-  --color-espresso: #f4f4f5;
-  --color-cream: #121212;
-  --color-terracotta: #10b981;
-  background-color: #121212;
-  color: #f4f4f5;
+/* Warm Minimalist Glassmorphism */
+.glass-card {
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 10px 30px -5px rgba(28, 25, 23, 0.06);
 }
 
-/* 
-PENTING: Semua reset atau override CSS global (misalnya untuk tag a, button, 
-ul, dll) WAJIB dibungkus di dalam @layer base. Jangan menulis rule CSS 
-unlayered di file ini, karena rule unlayered akan selalu mengalahkan utility 
-class Tailwind (text-*, bg-*, dll) meskipun spesifisitas class lebih tinggi 
-- ini adalah aturan CSS Cascade Layers, bukan soal urutan penulisan kode. 
-Referensi: https://developer.mozilla.org/en-US/docs/Web/CSS/@layer 
-*/
+.tech-glow {
+  box-shadow: 0 0 35px -5px rgba(217, 119, 6, 0.2);
+}
+
+/* Card Hover Elevation */
+.card-elevation {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-elevation:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px -10px rgba(217, 119, 6, 0.15);
+  border-color: rgba(217, 119, 6, 0.4);
+}
+
+/* Underline Slide-in Link */
+.link-underline {
+  position: relative;
+}
+.link-underline::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background-color: var(--primary);
+  transition: width 0.3s ease;
+}
+.link-underline:hover::after {
+  width: 100%;
+}
+
+/* Animated Gradient Border Glow */
+@keyframes gradientBorder {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animated-gradient-border {
+  background: linear-gradient(60deg, #d97706, #b45309, #f59e0b, #d97706);
+  background-size: 300% 300%;
+  animation: gradientBorder 6s ease infinite;
+}
+
+/* Shake Animation for Form Errors */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+/* Toast Slide-in */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(100px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in {
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Skeleton Loading */
+@keyframes skeletonPulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #e7e5e4 25%, #f5f5f4 50%, #e7e5e4 75%);
+  background-size: 200% 100%;
+  animation: skeletonPulse 1.5s infinite ease-in-out;
+}
+
+/* Seamless component and input adaptation */
+.bg-white, [class*="bg-white"] {
+  background-color: #ffffff !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+.bg-cream, [class*="bg-cream"] {
+  background-color: #fafaf9 !important;
+  color: var(--text-primary) !important;
+}
+
+input, textarea, select {
+  background-color: #ffffff !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 15px rgba(217, 119, 6, 0.2) !important;
+  outline: none !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
 @layer base {
-  a {
-    text-decoration: none;
-    color: inherit;
-  }
-  button, select {
-    cursor: pointer;
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

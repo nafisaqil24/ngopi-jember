@@ -1,73 +1,80 @@
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import type { CoffeeShop } from "../../types/coffeeShop";
-
-// Komponen ini menerima satu object CoffeeShop lewat props, lalu
-// merender tampilannya sebagai kartu. Dengan begini, kartu yang sama
-// bisa dipakai berulang kali di halaman Home (untuk populer/featured/
-// terbaru) maupun nanti di halaman Explorer, cukup dengan mengoper
-// data yang berbeda-beda.
-//
-// CATATAN PERBAIKAN: warna diganti dari coffee-100/coffee-300/coffee-900/
-// accent-500/accent-600 (tidak terdaftar di @theme index.css) menjadi
-// espresso/cream/terracotta yang valid.
 
 interface CoffeeShopCardProps {
   coffeeShop: CoffeeShop;
+  index?: number;
 }
 
-export default function CoffeeShopCard({ coffeeShop }: CoffeeShopCardProps) {
+export default function CoffeeShopCard({ coffeeShop, index = 0 }: CoffeeShopCardProps) {
   return (
-    <Link
-      to={`/coffee-shops/${coffeeShop.slug}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-espresso/10 bg-white dark:bg-zinc-900 dark:border-zinc-800 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.4, delay: index * 0.08, ease: "easeOut" }}
+      className={`relative rounded-2xl ${coffeeShop.isFeatured ? "p-[2px] animated-gradient-border shadow-lg" : ""}`}
     >
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-cream dark:bg-zinc-800">
-        <img
-          src={coffeeShop.imageUrl}
-          alt={coffeeShop.name}
-          loading="lazy"
-          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-        />
-        {coffeeShop.isFeatured && (
-          <span className="absolute left-3 top-3 rounded-full bg-terracotta px-3 py-1 text-xs font-semibold text-white">
-            Featured
-          </span>
-        )}
-      </div>
-
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-espresso dark:text-zinc-100">
-            {coffeeShop.name}
-          </h3>
-          <div className="flex shrink-0 items-center gap-1 text-sm font-medium text-espresso/80 dark:text-zinc-300">
-            <span aria-hidden>★</span>
-            {coffeeShop.rating.toFixed(1)}
-            <span className="text-espresso/40 dark:text-zinc-500">({coffeeShop.reviewCount})</span>
-          </div>
-        </div>
-
-        <p className="text-sm text-espresso/60 dark:text-zinc-400">{coffeeShop.district}</p>
-
-        <p className="text-sm font-medium text-espresso/80 dark:text-zinc-300">
-          {coffeeShop.priceRange}
-        </p>
-
-        <div className="mt-1 flex flex-wrap gap-1.5">
-          {coffeeShop.facilities.slice(0, 3).map((facility) => (
-            <span
-              key={facility}
-              className="rounded-full bg-cream dark:bg-zinc-800 px-2.5 py-1 text-xs text-espresso/70 dark:text-zinc-300"
-            >
-              {facility}
+      <Link
+        to={`/coffee-shops/${coffeeShop.slug}`}
+        className="card-elevation group flex flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white transition-all duration-300 hover:border-indigo-600 h-full"
+      >
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
+          <img
+            src={coffeeShop.imageUrl}
+            alt={coffeeShop.name}
+            loading="lazy"
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+          />
+          {coffeeShop.isFeatured && (
+            <span className="absolute left-3 top-3 rounded-lg bg-indigo-600 px-3 py-1 font-mono text-[11px] font-bold text-white shadow-md tracking-wider uppercase">
+              Featured
             </span>
-          ))}
+          )}
         </div>
 
-        <span className="mt-auto pt-2 text-sm font-semibold text-terracotta dark:text-emerald-400">
-          Lihat Detail
-        </span>
-      </div>
-    </Link>
+        <div className="flex flex-1 flex-col gap-2 p-4">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-semibold text-slate-900">
+              {coffeeShop.name}
+            </h3>
+            <div className="flex shrink-0 items-center gap-1 text-sm font-semibold text-slate-900">
+              <span aria-hidden>★</span>
+              {coffeeShop.rating.toFixed(1)}
+              <span className="text-slate-700">({coffeeShop.reviewCount})</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium text-slate-700">{coffeeShop.district}</span>
+            {coffeeShop.distance !== undefined && (
+              <span className="font-mono text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-500/20">
+                📍 {coffeeShop.distance} km
+              </span>
+            )}
+          </div>
+
+          <p className="text-sm font-semibold text-slate-900">
+            {coffeeShop.priceRange}
+          </p>
+
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {coffeeShop.facilities.slice(0, 3).map((facility) => (
+              <span
+                key={facility}
+                className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-800"
+              >
+                {facility}
+              </span>
+            ))}
+          </div>
+
+          <span className="mt-auto pt-2 font-mono text-xs font-bold text-indigo-600 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+            Lihat Detail →
+          </span>
+        </div>
+      </Link>
+    </motion.div>
   );
 }

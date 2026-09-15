@@ -1,43 +1,24 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import MainLayout from "../layouts/MainLayout";
 import { getCoffeeShopBySlug, getImageUrl, createReview, ApiError, type ApiCoffeeShopDetail } from "../services/coffeeShop";
 import { useAuth } from "../hooks/useAuth";
 import NotFound from "./NotFound";
 
-// Halaman detail coffee shop, sekarang fetch data ASLI dari backend
-// (sebelumnya baca dari data dummy di data.ts).
-//
-// PERUBAHAN PENTING dibanding versi dummy:
-// 1. Data diambil lewat getCoffeeShopBySlug(slug), yang memanggil
-//    GET /api/coffee-shops/:slug -- endpoint ini SUDAH menyertakan
-//    categories, facilities, images, menus, promotions, reviews
-//    sekaligus (lihat coffee-shop.routes.ts di backend), jadi tidak
-//    perlu banyak fetch terpisah.
-// 2. Field yang dulu ada di data dummy tapi TIDAK ADA di database
-//    (whatsapp, instagram sebagai link penuh, googleMapsUrl, galeri
-//    foto multi) disesuaikan:
-//    - instagram: backend simpan sebagai username/handle, bukan URL
-//      penuh, jadi di sini dirangkai jadi link.
-//    - whatsapp: backend simpan sebagai "phone", formatnya bebas
-//      (mungkin ada spasi/strip), jadi dibersihkan dulu sebelum
-//      dipakai di link wa.me.
-//    - googleMapsUrl: TIDAK ADA field ini di database. Sebagai
-//      gantinya, link Maps dibuat otomatis dari latitude/longitude
-//      kalau ada, atau dari alamat sebagai teks pencarian kalau
-//      koordinat belum diisi owner.
-// 3. Ada state loading & error karena sekarang menunggu jawaban
-//    server yang bisa lambat/gagal.
-// 4. Menu sekarang dari shop.menus (relasi asli), bukan array
-//    hardcode seperti dummy.
-
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-9">
-      <h2 className="mb-4 text-xl font-black">{title}</h2>
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="mt-9"
+    >
+      <h2 className="mb-4 text-xl font-black text-slate-950">{title}</h2>
       {children}
-    </section>
+    </motion.section>
   );
 }
 
@@ -72,10 +53,17 @@ export default function CoffeeShopDetail() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [reviewSuccess, setReviewSuccess] = useState("");
+  const [isShaking, setIsShaking] = useState(false);
 
   async function handleReviewSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!token || !shop) return;
+    if (reviewComment.trim().length < 3) {
+      setReviewError("Komentar minimal 3 karakter.");
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 400);
+      return;
+    }
     setSubmittingReview(true);
     setReviewError("");
     setReviewSuccess("");
@@ -91,6 +79,8 @@ export default function CoffeeShopDetail() {
       setShop(updated.data);
     } catch (err: any) {
       setReviewError(err instanceof ApiError ? err.message : "Gagal mengirim ulasan");
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 400);
     } finally {
       setSubmittingReview(false);
     }
@@ -111,8 +101,12 @@ export default function CoffeeShopDetail() {
   if (loading) {
     return (
       <MainLayout>
-        <main className="mx-auto max-w-7xl px-5 py-24 text-center text-espresso/60">
-          Memuat detail coffee shop...
+        <main className="mx-auto max-w-7xl px-5 py-24">
+          <div className="h-80 w-full rounded-3xl skeleton mb-8" />
+          <div className="space-y-4">
+            <div className="h-10 w-2/3 rounded-xl skeleton" />
+            <div className="h-6 w-1/3 rounded-xl skeleton" />
+          </div>
         </main>
       </MainLayout>
     );
@@ -126,18 +120,28 @@ export default function CoffeeShopDetail() {
 
   return (
     <MainLayout>
-      <main className="mx-auto max-w-7xl px-5 py-10">
-        <Link to="/coffee-shops" className="text-sm font-bold text-terracotta">
+      <motion.main
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        className="mx-auto max-w-7xl px-5 py-10"
+      >
+        <Link to="/coffee-shops" className="text-sm font-bold text-indigo-600 inline-flex items-center gap-1 hover:underline">
           ← Kembali menjelajah
         </Link>
 
-        <div className="mt-5">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mt-5"
+        >
           <img
             src={getImageUrl(shop.images?.[0]?.imageUrl) ?? "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=85"}
             alt={shop.name}
-            className="h-80 w-full rounded-3xl object-cover"
+            className="h-80 w-full rounded-3xl object-cover shadow-lg"
           />
-        </div>
+        </motion.div>
 
         <div className="mt-9 grid gap-10 lg:grid-cols-[1fr_330px]">
           <section>
@@ -145,7 +149,7 @@ export default function CoffeeShopDetail() {
               <div>
                 <div className="flex gap-2">
                   {shop.isFeatured && (
-                    <span className="rounded-full bg-terracotta px-3 py-1 text-xs font-bold text-white">
+                    <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-bold text-white shadow-md uppercase tracking-wider font-mono">
                       Featured
                     </span>
                   )}
@@ -159,37 +163,51 @@ export default function CoffeeShopDetail() {
                     {shop.status === "OPEN" ? "Buka sekarang" : "Tutup"}
                   </span>
                 </div>
-                <h1 className="mt-3 text-4xl font-black">{shop.name}</h1>
-               <p className="mt-2 text-espresso/65">⌖ {shop.address}</p>
+                <h1 className="mt-3 text-4xl font-black text-slate-950">{shop.name}</h1>
+                <p className="mt-2 text-slate-800 font-medium">⌖ {shop.address}</p>
               </div>
-              <div className="rounded-xl bg-white px-4 py-3 text-right shadow-sm">
-                <b className="text-xl text-terracotta">★ {rating.toFixed(1)}</b>
-                <p className="text-xs text-espresso/60">{shop.reviewCount} ulasan</p>
+              <div className="rounded-xl bg-white px-4 py-3 text-right shadow-sm ring-1 ring-slate-200">
+                <b className="text-xl text-indigo-600">★ {rating.toFixed(1)}</b>
+                <p className="text-xs text-slate-800 font-medium">{shop.reviewCount} ulasan</p>
               </div>
             </div>
 
-            <p className="mt-7 leading-8 text-espresso/75">{shop.description}</p>
+            <p className="mt-7 leading-8 text-slate-900 font-medium">{shop.description}</p>
 
             <Block title="Fasilitas">
               <div className="flex flex-wrap gap-2">
-                {shop.facilities.map((facility) => (
-                  <span
-                    key={facility.id}
-                    className="rounded-lg bg-white px-3 py-2 text-sm shadow-sm"
-                  >
-                    ✓ {facility.name}
-                  </span>
-                ))}
+                {shop.facilities.map((item, index) => {
+                  const fac = item.facility;
+                  return (
+                    <motion.span
+                      key={fac.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: index * 0.05 }}
+                      className="rounded-lg bg-white px-3.5 py-2 text-sm shadow-sm ring-1 ring-slate-200 font-medium text-slate-900 inline-flex items-center gap-1.5"
+                    >
+                      <span className="text-indigo-600 font-bold">✓</span> {fac.name}
+                    </motion.span>
+                  );
+                })}
               </div>
             </Block>
 
-            <Block title="Menu favorit">
+             <Block title="Menu favorit">
               {shop.menus.length === 0 ? (
-                <p className="text-sm text-espresso/60">Menu belum tersedia.</p>
+                <p className="text-sm text-slate-800 font-medium">Menu belum tersedia.</p>
               ) : (
-                <div className="divide-y divide-espresso/10 rounded-2xl bg-white px-5 shadow-sm">
-                  {shop.menus.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between py-4 text-sm gap-4">
+                <div className="divide-y divide-slate-200 rounded-2xl bg-white px-5 shadow-sm ring-1 ring-slate-200">
+                  {shop.menus.map((item, index) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: index * 0.05 }}
+                      className="flex items-center justify-between py-4 text-sm gap-4"
+                    >
                       <div className="flex items-center gap-3">
                         {item.image && (
                           <img
@@ -200,22 +218,22 @@ export default function CoffeeShopDetail() {
                         )}
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <b className="text-espresso">{item.name}</b>
+                            <b className="text-slate-950">{item.name}</b>
                             {item.category && (
-                              <span className="rounded-md bg-espresso/5 px-2 py-0.5 text-xs font-bold text-espresso/70">
+                              <span className="rounded-md bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-700">
                                 {item.category}
                               </span>
                             )}
                           </div>
                           {item.description && (
-                            <p className="text-xs text-espresso/65">{item.description}</p>
+                            <p className="text-xs text-slate-800 font-medium">{item.description}</p>
                           )}
                         </div>
                       </div>
-                      <div className="font-bold text-terracotta shrink-0">
+                      <div className="font-bold text-indigo-600 shrink-0">
                         Rp{item.price.toLocaleString("id-ID")}
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               )}
@@ -223,18 +241,22 @@ export default function CoffeeShopDetail() {
 
             <Block title={`Ulasan & Rating (${shop.reviews.length})`}>
               <div className="space-y-6">
-                {/* Form Ulasan */}
                 {user ? (
-                  <form onSubmit={handleReviewSubmit} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-espresso/10 space-y-4">
-                    <h3 className="font-black text-lg">Tulis Ulasan Kamu</h3>
-                    {reviewError && <p className="text-sm text-red-600">{reviewError}</p>}
-                    {reviewSuccess && <p className="text-sm text-green-700">{reviewSuccess}</p>}
+                  <form onSubmit={handleReviewSubmit} className={`rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-300 space-y-4 ${isShaking ? "animate-shake" : ""}`}>
+                    <h3 className="font-black text-lg text-slate-950">Tulis Ulasan Kamu</h3>
+                    {reviewError && <p className="text-sm text-red-600 font-bold">{reviewError}</p>}
+                    {reviewSuccess && (
+                      <div className="flex items-center gap-2 text-sm text-green-700 font-bold animate-in fade-in duration-200">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-green-700 text-xs">✓</span>
+                        {reviewSuccess}
+                      </div>
+                    )}
                     <div>
-                      <label className="block text-xs font-bold text-espresso/70 mb-1">Rating Bintang *</label>
+                      <label className="block text-xs font-bold text-slate-900 mb-1">Rating Bintang *</label>
                       <select
                         value={reviewRating}
                         onChange={(e) => setReviewRating(Number(e.target.value))}
-                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-600 font-medium text-slate-950"
                       >
                         <option value="5">★★★★★ (5 - Sangat Baik)</option>
                         <option value="4">★★★★☆ (4 - Baik)</option>
@@ -244,45 +266,51 @@ export default function CoffeeShopDetail() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-espresso/70 mb-1">Komentar * (min 3 karakter)</label>
+                      <label className="block text-xs font-bold text-slate-900 mb-1">Komentar * (min 3 karakter)</label>
                       <textarea
                         required
                         rows={3}
                         value={reviewComment}
                         onChange={(e) => setReviewComment(e.target.value)}
                         placeholder="Bagikan pengalamanmu ngopi di sini..."
-                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-600 font-medium text-slate-950 placeholder:text-slate-500"
                       />
                     </div>
                     <button
                       type="submit"
                       disabled={submittingReview}
-                      className="rounded-xl bg-terracotta px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-terracotta/90 disabled:opacity-50"
+                      className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-500 hover:scale-105 active:scale-95 disabled:opacity-50 transition"
                     >
                       {submittingReview ? "Mengirim..." : "Kirim Ulasan"}
                     </button>
                   </form>
                 ) : (
-                  <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-espresso/10 text-center text-sm text-espresso/70">
-                    Silakan <Link to="/login" className="font-bold text-terracotta underline">login</Link> terlebih dahulu untuk menulis ulasan.
+                  <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-300 text-center text-sm text-slate-950 font-medium">
+                    Silakan <Link to="/login" className="font-bold text-indigo-600 underline">login</Link> terlebih dahulu untuk menulis ulasan.
                   </div>
                 )}
 
-                {/* List Ulasan */}
                 {shop.reviews.length === 0 ? (
-                  <p className="text-sm text-espresso/60">Belum ada ulasan untuk coffee shop ini.</p>
+                  <p className="text-sm text-slate-800 font-medium">Belum ada ulasan untuk coffee shop ini.</p>
                 ) : (
                   <div className="space-y-4">
-                    {shop.reviews.map((review) => (
-                      <div key={review.id} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-espresso/10 space-y-2">
+                    {shop.reviews.map((review, index) => (
+                      <motion.div
+                        key={review.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: index * 0.05 }}
+                        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-300 space-y-2"
+                      >
                         <div className="flex items-center justify-between">
-                          <b className="text-espresso">{review.user.name}</b>
-                          <span className="text-terracotta font-bold text-sm">
+                          <b className="text-slate-950">{review.user.name}</b>
+                          <span className="text-indigo-600 font-bold text-sm">
                             {"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
                           </span>
                         </div>
-                        <p className="text-sm text-espresso/80 leading-relaxed">{review.comment}</p>
-                      </div>
+                        <p className="text-sm text-slate-900 font-medium leading-relaxed">{review.comment}</p>
+                      </motion.div>
                     ))}
                   </div>
                 )}
@@ -290,16 +318,16 @@ export default function CoffeeShopDetail() {
             </Block>
           </section>
 
-          <aside className="h-fit rounded-2xl bg-white p-6 shadow-sm ring-1 ring-espresso/10">
-            <h2 className="text-lg font-black">Informasi lokasi</h2>
+          <aside className="h-fit rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-300 sticky top-24">
+            <h2 className="text-lg font-black text-slate-950">Informasi lokasi</h2>
             <dl className="mt-5 grid gap-4 text-sm">
               <div>
-                <dt className="text-espresso/60">Jam operasional</dt>
-                <dd className="mt-1 font-bold">{shop.openingHours}</dd>
+                <dt className="text-slate-800 font-medium">Jam operasional</dt>
+                <dd className="mt-1 font-bold text-slate-950">{shop.openingHours}</dd>
               </div>
               <div>
-                <dt className="text-espresso/60">Kisaran harga</dt>
-                <dd className="mt-1 font-bold">{shop.priceRange}</dd>
+                <dt className="text-slate-800 font-medium">Kisaran harga</dt>
+                <dd className="mt-1 font-bold text-slate-950">{shop.priceRange}</dd>
               </div>
             </dl>
             <div className="mt-6 grid gap-3">
@@ -308,7 +336,7 @@ export default function CoffeeShopDetail() {
                   href={whatsappUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-xl bg-[#25D366] py-3 text-center text-sm font-bold text-white"
+                  className="rounded-xl bg-[#25D366] py-3 text-center text-sm font-bold text-white hover:scale-105 active:scale-95 transition shadow-sm"
                 >
                   WhatsApp
                 </a>
@@ -318,7 +346,7 @@ export default function CoffeeShopDetail() {
                   href={instagramUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-xl border border-espresso/15 py-3 text-center text-sm font-bold"
+                  className="rounded-xl border border-slate-300 py-3 text-center text-sm font-bold text-slate-900 hover:bg-slate-100 hover:scale-105 active:scale-95 transition shadow-2xs"
                 >
                   Instagram
                 </a>
@@ -327,14 +355,14 @@ export default function CoffeeShopDetail() {
                 href={buildMapsUrl(shop)}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-xl border border-espresso/15 py-3 text-center text-sm font-bold"
+                className="rounded-xl border border-slate-300 py-3 text-center text-sm font-bold text-slate-900 hover:bg-slate-100 hover:scale-105 active:scale-95 transition shadow-2xs"
               >
                 Buka Google Maps
               </a>
             </div>
           </aside>
         </div>
-      </main>
+      </motion.main>
     </MainLayout>
   );
 }

@@ -1,13 +1,17 @@
 import cors from 'cors'
 import express from 'express'
+import helmet from 'helmet'
 import path from 'path'
 import { authRouter } from './routes/auth.routes.js'
 import { coffeeShopRouter } from './routes/coffee-shop.routes.js'
 import { ownerRouter } from './routes/owner.routes.js'
+import { adminRouter } from './routes/admin.routes.js'
 import { referenceRouter } from './routes/reference.routes.js'
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js'
 
 export const app = express()
+
+app.use(helmet())
 
 const allowedOrigins = (process.env.CLIENT_URL ?? 'http://localhost:5173').split(',').map(s => s.trim())
 if (!allowedOrigins.includes('http://localhost:5173')) allowedOrigins.push('http://localhost:5173')
@@ -34,6 +38,7 @@ app.get('/api/health', (_request, response) => response.json({ success: true, da
 app.use('/api/auth', authRouter)
 app.use('/api/coffee-shops', coffeeShopRouter)
 app.use('/api/owner', ownerRouter)
+app.use('/api/admin', adminRouter)
 app.use('/api', referenceRouter)
 
 app.use(notFoundHandler)

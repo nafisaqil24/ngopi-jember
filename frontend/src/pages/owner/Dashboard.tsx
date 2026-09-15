@@ -9,13 +9,16 @@ import {
   deleteCoffeeShop,
   updateMenu,
   deleteMenu,
+  listFacilities,
+  updateShopTaxonomy,
   getImageUrl,
   ApiError,
   type ApiOwnerShop,
+  type ApiFacility,
 } from "../../services/coffeeShop";
 
 export default function OwnerDashboard() {
-  const { user, token, logout } = useAuth();
+  const { user, token } = useAuth();
   const [shop, setShop] = useState<ApiOwnerShop | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -29,9 +32,15 @@ export default function OwnerDashboard() {
   const [shopDescription, setShopDescription] = useState("");
   const [shopPhone, setShopPhone] = useState("");
   const [shopInstagram, setShopInstagram] = useState("");
+  const [shopLatitude, setShopLatitude] = useState("-8.1721");
+  const [shopLongitude, setShopLongitude] = useState("113.7008");
+  const [allFacilities, setAllFacilities] = useState<ApiFacility[]>([]);
+  const [selectedFacilityIds, setSelectedFacilityIds] = useState<string[]>([]);
   const [shopImage, setShopImage] = useState<File | null>(null);
   const [creatingShop, setCreatingShop] = useState(false);
   const [createShopError, setCreateShopError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<"profile" | "menu">("profile");
 
   // Form Edit Coffee Shop
   const [isEditingShop, setIsEditingShop] = useState(false);
@@ -44,6 +53,10 @@ export default function OwnerDashboard() {
   const [editShopPhone, setEditShopPhone] = useState("");
   const [editShopInstagram, setEditShopInstagram] = useState("");
   const [editShopStatus, setEditShopStatus] = useState<"OPEN" | "CLOSED" | "TEMPORARILY_CLOSED">("OPEN");
+  const [editShopLatitude, setEditShopLatitude] = useState("-8.1721");
+  const [editShopLongitude, setEditShopLongitude] = useState("113.7008");
+  const [editShopSearchQuery, setEditShopSearchQuery] = useState("");
+  const [editFacilityIds, setEditFacilityIds] = useState<string[]>([]);
   const [editShopImage, setEditShopImage] = useState<File | null>(null);
   const [updatingShop, setUpdatingShop] = useState(false);
   const [editShopError, setEditShopError] = useState("");
@@ -70,6 +83,58 @@ export default function OwnerDashboard() {
 
   const [fetchedToken, setFetchedToken] = useState<string | null>(null);
 
+  async function searchAddress(query: string) {
+    if (!query.trim()) return;
+    let normalized = query.toLowerCase().replace("jln", "jl").replace(/\./g, "").replace(/\s+/g, " ").trim();
+    const fullQuery = `${normalized}, Kota Jember, Jawa Timur, Indonesia`;
+    setShopLatitude("-8.1721");
+    setShopLongitude("113.7008");
+    try {
+      let response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullQuery)}`);
+      let results = await response.json();
+      if (!results || results.length === 0) {
+        response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(normalized)}`);
+        results = await response.json();
+      }
+      if (results && results.length > 0) {
+        const loc = results[0];
+        setShopLatitude(String(loc.lat));
+        setShopLongitude(String(loc.lng));
+        alert(`✅ Alamat ditemukan:\n${loc.display_name}\nLat: ${loc.lat}, Lng: ${loc.lng}`);
+      } else {
+        alert("❌ Alamat tidak ditemukan.");
+      }
+    } catch (_err) {
+      alert("❌ Error koneksi search alamat.");
+    }
+  }
+
+  async function searchEditAddress(query: string) {
+    if (!query.trim()) return;
+    let normalized = query.toLowerCase().replace("jln", "jl").replace(/\./g, "").replace(/\s+/g, " ").trim();
+    const fullQuery = `${normalized}, Kota Jember, Jawa Timur, Indonesia`;
+    setEditShopLatitude("-8.1721");
+    setEditShopLongitude("113.7008");
+    try {
+      let response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullQuery)}`);
+      let results = await response.json();
+      if (!results || results.length === 0) {
+        response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(normalized)}`);
+        results = await response.json();
+      }
+      if (results && results.length > 0) {
+        const loc = results[0];
+        setEditShopLatitude(String(loc.lat));
+        setEditShopLongitude(String(loc.lng));
+        alert(`✅ Alamat ditemukan:\n${loc.display_name}\nLat: ${loc.lat}, Lng: ${loc.lng}`);
+      } else {
+        alert("❌ Alamat tidak ditemukan.");
+      }
+    } catch (_err) {
+      alert("❌ Error koneksi search alamat.");
+    }
+  }
+
   useEffect(() => {
     if (!token) {
       setLoading(false);
@@ -93,11 +158,20 @@ export default function OwnerDashboard() {
           setEditShopPhone(data.phone || "");
           setEditShopInstagram(data.instagram || "");
           setEditShopStatus(data.status);
+          setEditShopLatitude(data.latitude !== null && data.latitude !== undefined ? String(data.latitude) : "-8.1721");
+          setEditShopLongitude(data.longitude !== null && data.longitude !== undefined ? String(data.longitude) : "113.7008");
+          setEditFacilityIds(data.facilities?.map(f => f.facility.id) || []);
         }
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Gagal memuat data coffee shop"))
       .finally(() => setLoading(false));
   }, [token, fetchedToken]);
+
+  useEffect(() => {
+    listFacilities()
+      .then((res) => setAllFacilities(res.data))
+      .catch(() => setAllFacilities([]));
+  }, []);
 
   async function handleCreateShop(e: React.FormEvent) {
     e.preventDefault();
@@ -106,7 +180,7 @@ export default function OwnerDashboard() {
     setCreateShopError("");
 
     try {
-      await createCoffeeShop(token, {
+      const newShop = await createCoffeeShop(token, {
         name: shopName,
         district: shopDistrict,
         address: shopAddress,
@@ -116,7 +190,13 @@ export default function OwnerDashboard() {
         phone: shopPhone || undefined,
         instagram: shopInstagram || undefined,
         image: shopImage || undefined,
+        latitude: Number(shopLatitude),
+        longitude: Number(shopLongitude),
       });
+
+      if (newShop && newShop.id && selectedFacilityIds.length > 0) {
+        await updateShopTaxonomy(newShop.id, token, { facilityIds: selectedFacilityIds });
+      }
 
       const updated = await getOwnerCoffeeShop(token);
       setShop(updated);
@@ -130,6 +210,9 @@ export default function OwnerDashboard() {
         setEditShopPhone(updated.phone || "");
         setEditShopInstagram(updated.instagram || "");
         setEditShopStatus(updated.status);
+        setEditShopLatitude(updated.latitude !== null && updated.latitude !== undefined ? String(updated.latitude) : "-8.1721");
+        setEditShopLongitude(updated.longitude !== null && updated.longitude !== undefined ? String(updated.longitude) : "113.7008");
+        setEditFacilityIds(updated.facilities?.map(f => f.facility.id) || []);
       }
     } catch (err: any) {
       setCreateShopError(err instanceof ApiError ? err.message : (err.message || "Gagal mendaftarkan coffee shop"));
@@ -155,8 +238,12 @@ export default function OwnerDashboard() {
         phone: editShopPhone || undefined,
         instagram: editShopInstagram || undefined,
         status: editShopStatus,
+        latitude: Number(editShopLatitude),
+        longitude: Number(editShopLongitude),
         image: editShopImage || undefined,
       });
+
+      await updateShopTaxonomy(shop.id, token, { facilityIds: editFacilityIds });
 
       const updated = await getOwnerCoffeeShop(token);
       setShop(updated);
@@ -170,7 +257,7 @@ export default function OwnerDashboard() {
 
   async function handleDeleteShop() {
     if (!shop || !token) return;
-    if (!window.confirm("Apakah Anda yakin ingin menghapus coffee shop ini? Semua data menu dan ulasan terkait akan ikut terhapus.")) {
+    if (!window.confirm("Yakin ingin menghapus toko ini? Tindakan ini tidak bisa dibatalkan")) {
       return;
     }
 
@@ -282,12 +369,6 @@ export default function OwnerDashboard() {
               Halo, <b className="text-espresso">{user?.name}</b>. Kelola informasi dan daftar menu coffee shop kamu di sini.
             </p>
           </div>
-          <button
-            onClick={logout}
-            className="rounded-xl border border-espresso/15 bg-white px-4 py-2.5 text-sm font-bold text-espresso hover:bg-espresso/5"
-          >
-            Logout
-          </button>
         </div>
 
         {loading && <p className="mt-12 text-center text-espresso/60">Memuat data coffee shop...</p>}
@@ -338,9 +419,60 @@ export default function OwnerDashboard() {
                   placeholder="Contoh: Jl. Kalimantan No. 35"
                   className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-3 text-sm outline-none focus:border-terracotta"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-espresso/70 mb-1">Kisaran Harga *</label>
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Cari alamat (contoh: Jl. Karimata No. 41)"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && searchAddress(searchQuery)}
+                    className="flex-1 rounded-xl border border-espresso/15 bg-white px-3 py-3 text-sm outline-none focus:border-terracotta"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => searchAddress(searchQuery)}
+                    className="rounded-xl bg-terracotta px-3 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-terracotta/90"
+                  >
+                    🔍 Cari
+                  </button>
+</div>
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => handleGetGPS(false)}
+                    className="rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-indigo-500 transition inline-flex items-center gap-1.5"
+                  >
+                    <span>📍 Gunakan GPS Saya</span>
+                  </button>
+                </div>
+                <div className="mt-4 rounded-xl border border-espresso/15 bg-slate-50 p-4 space-y-3">
+                  <h5 className="text-xs font-bold text-espresso/60 uppercase tracking-wider">Fasilitas Coffee Shop</h5>
+                  <p className="text-xs text-espresso/50 mb-3">Pilih fasilitas yang ada di coffee shop kamu</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {allFacilities.map((facility) => (
+                      <label key={facility.id} className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={selectedFacilityIds.includes(facility.id)}
+                          onChange={() => {
+                            const newSelected = selectedFacilityIds.includes(facility.id)
+                              ? selectedFacilityIds.filter(id => id !== facility.id)
+                              : [...selectedFacilityIds, facility.id];
+                            setSelectedFacilityIds(newSelected);
+                          }}
+                          className="rounded border-espresso/15 bg-white p-1"
+                        />
+                        <span className="text-sm text-espresso/70">{facility.name}</span>
+                      </label>
+                    ))}
+                    {!allFacilities.length && (
+                      <span className="text-sm text-espresso/40">Memuat fasilitas...</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-espresso/70 mb-1">Kisaran Harga *</label>
                 <input
                   type="text"
                   required
@@ -415,18 +547,61 @@ export default function OwnerDashboard() {
         )}
 
         {!loading && !error && shop && (
-          <div className="mt-8 space-y-8">
-            {/* Informasi Coffee Shop */}
-            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-espresso/10">
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Sidebar Samping (Bukan Navbar di atas halaman) */}
+            <div className="lg:col-span-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-espresso/10 space-y-2 sticky top-6">
+              <div className="px-3 py-2 text-xs font-bold text-espresso/40 uppercase tracking-wider">Menu Dashboard</div>
+              <button
+                onClick={() => setActiveTab("profile")}
+                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition flex items-center gap-3 ${
+                  activeTab === "profile"
+                    ? "bg-terracotta text-white shadow-sm"
+                    : "text-espresso/70 hover:bg-espresso/5"
+                }`}
+              >
+                <span>☕</span>
+                <span>Profil Cafe</span>
+              </button>
+              <button
+                onClick={() => setActiveTab("menu")}
+                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition flex items-center gap-3 ${
+                  activeTab === "menu"
+                    ? "bg-terracotta text-white shadow-sm"
+                    : "text-espresso/70 hover:bg-espresso/5"
+                }`}
+              >
+                <span>📋</span>
+                <span>Daftar Menu</span>
+              </button>
+            </div>
+
+            {/* Area Konten Utama (Beda Halaman / Tab) */}
+            <div className="lg:col-span-9 space-y-6">
+              {activeTab === "profile" ? (
+                <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-espresso/10">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="rounded-full bg-terracotta/10 px-3 py-1 text-xs font-bold text-terracotta">
                       {shop.status === "OPEN" ? "Buka" : shop.status === "CLOSED" ? "Tutup" : "Tutup Sementara"}
                     </span>
+                    {shop.isVerified ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200">
+                        ✓ Terverifikasi
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 border border-amber-200">
+                        ⏳ Menunggu Verifikasi
+                      </span>
+                    )}
                   </div>
                   <h2 className="mt-3 text-2xl font-black">{shop.name}</h2>
                   <p className="mt-1 text-sm text-espresso/65">⌖ {shop.address} ({shop.district})</p>
+                  {!shop.isVerified && (
+                    <p className="mt-1.5 text-xs text-amber-600 font-medium">
+                      Toko kamu belum tampil di direktori publik sampai disetujui Admin.
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
@@ -508,6 +683,54 @@ export default function OwnerDashboard() {
                         onChange={(e) => setEditShopAddress(e.target.value)}
                         className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
                       />
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder="Cari alamat (contoh: Jl. Karimata No. 41)"
+                          value={editShopSearchQuery}
+                          onChange={(e) => setEditShopSearchQuery(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && searchEditAddress(editShopSearchQuery)}
+                          className="flex-1 rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => searchEditAddress(editShopSearchQuery)}
+                          className="rounded-xl bg-terracotta px-3 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-terracotta/90"
+                        >
+                          🔍 Cari
+                        </button>
+                      </div>
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={() => handleGetGPS(true)}
+                          className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-indigo-500 transition inline-flex items-center gap-1.5"
+                        >
+                          <span>📍 Gunakan GPS Saya untuk Lokasi Baru</span>
+                        </button>
+                        <span className="ml-3 text-xs text-espresso/60">Lat: {editShopLatitude}, Lng: {editShopLongitude}</span>
+                      </div>
+                    </div>
+                    <div className="sm:col-span-2 rounded-xl border border-espresso/15 bg-white p-4 space-y-3">
+                      <h5 className="text-xs font-bold text-espresso/60 uppercase tracking-wider">Fasilitas Coffee Shop</h5>
+                      <div className="grid grid-cols-2 gap-2">
+                        {allFacilities.map((facility) => (
+                          <label key={facility.id} className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={editFacilityIds.includes(facility.id)}
+                              onChange={() => {
+                                const newSelected = editFacilityIds.includes(facility.id)
+                                  ? editFacilityIds.filter(id => id !== facility.id)
+                                  : [...editFacilityIds, facility.id];
+                                setEditFacilityIds(newSelected);
+                              }}
+                              className="rounded border-espresso/15 bg-white p-1"
+                            />
+                            <span className="text-sm text-espresso/70">{facility.name}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-espresso/70 mb-1">Kisaran Harga *</label>
@@ -598,9 +821,9 @@ export default function OwnerDashboard() {
                 </form>
               )}
             </div>
-
-            {/* List Menu & Tombol Tambah */}
-            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-espresso/10">
+              ) : (
+                <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-espresso/10">
+                  {/* List Menu & Tombol Tambah */}
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <h3 className="text-xl font-black">Daftar Menu</h3>
@@ -813,9 +1036,37 @@ export default function OwnerDashboard() {
                 )}
               </div>
             </div>
+              )}
+            </div>
           </div>
         )}
       </main>
     </MainLayout>
   );
+  
+  function handleGetGPS(isEdit = false) {
+    if (!navigator.geolocation) {
+      alert("Geolocation tidak didukung browser Anda.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        if (isEdit) {
+          setEditShopLatitude(String(lat));
+          setEditShopLongitude(String(lng));
+        } else {
+          setShopLatitude(String(lat));
+          setShopLongitude(String(lng));
+        }
+        alert(`Lokasi berhasil diletakkan via GPS!\nLat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)} - Akurasi tinggi`);
+      },
+      (_err) => {
+        alert("Gagal mendeteksi lokasi GPS. Pastikan izin lokasi diaktifkan.");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+
 }

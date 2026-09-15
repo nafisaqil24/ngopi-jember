@@ -20,4 +20,40 @@ describe('API Health and Error Handling', () => {
       message: 'Endpoint API tidak ditemukan',
     })
   })
+
+  it('PUT /api/coffee-shops/:id updates shop status to CLOSED in database', async () => {
+    const email = `owner_${Date.now()}@test.com`
+    const regRes = await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'Test Owner', email, password: 'Password123!', role: 'OWNER' })
+    
+    expect(regRes.status).toBe(201)
+    const token = regRes.body.data.token
+
+    const shopRes = await request(app)
+      .post('/api/coffee-shops')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'Kopi Status Test',
+        description: 'Testing status update in database properly',
+        address: 'Jl. Test No. 1',
+        district: 'Sumbersari',
+        priceRange: 'Rp15rb-30rb',
+        openingHours: '09.00-22.00',
+        latitude: -8.1721,
+        longitude: 113.7008,
+      })
+    
+    expect(shopRes.status).toBe(201)
+    const shopId = shopRes.body.data.id
+    expect(shopRes.body.data.status).toBe('OPEN')
+
+    const updateRes = await request(app)
+      .put(`/api/coffee-shops/${shopId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'CLOSED' })
+    
+    expect(updateRes.status).toBe(200)
+    expect(updateRes.body.data.status).toBe('CLOSED')
+  })
 })

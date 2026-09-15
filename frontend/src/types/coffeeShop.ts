@@ -19,4 +19,5 @@ export interface CoffeeShop {
   imageUrl: string;
   isFeatured: boolean;
   isOpenNow: boolean;
+  distance?: number;
 }

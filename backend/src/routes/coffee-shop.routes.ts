@@ -3,7 +3,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authenticate, authorize, type AuthenticatedRequest } from '../middleware/auth.js'
-import { upload } from '../middleware/upload.js'
+import { upload, uploadToCloudinaryIfNeeded } from '../middleware/upload.js'
 import { menuRouter } from './menu.routes.js'
 import { reviewRouter } from './review.routes.js'
 
@@ -18,6 +18,7 @@ const listQuery = z.object({
   minRating: z.coerce.number().min(1).max(5).optional(),
   facility: z.string().trim().max(80).optional(),
   featured: z.enum(['true', 'false']).optional(),
+  sort: z.enum(['popular', 'new', 'rating']).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(12),
 })
@@ -31,8 +32,9 @@ const createShop = z.object({
   openingHours: z.string().trim().min(1).max(200),
   phone: z.string().trim().max(30).optional(),
   instagram: z.string().trim().max(200).optional(),
-  latitude: z.coerce.number().min(-90).max(90).optional(),
-  longitude: z.coerce.number().min(-180).max(180).optional(),
+  latitude: z.coerce.number().min(-90).max(90),
+  longitude: z.coerce.number().min(-180).max(180),
+  status: z.enum(['OPEN', 'CLOSED', 'TEMPORARILY_CLOSED']).optional(),
 })
 
 const updateShop = createShop.partial()
@@ -41,6 +43,27 @@ const assignRefs = z.object({
   categoryIds: z.array(z.string().cuid()).optional(),
   facilityIds: z.array(z.string().cuid()).optional(),
 })
+
+const nearbyQuery = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
+  radius: z.coerce.number().positive().default(25),
+  limit: z.coerce.number().int().min(1).max(30).default(10),
+})
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371
+  const dLat = (lat2 - lat1) * (Math.PI / 180)
+  const dLon = (lon2 - lon1) * (Math.PI / 180)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
 
 const cardInclude = {
   facilities: { include: { facility: true } },
@@ -82,15 +105,24 @@ coffeeShopRouter.get('/', async (request, response, next) => {
   try {
     const parsed = listQuery.safeParse(request.query)
     if (!parsed.success) return response.status(400).json({ success: false, message: 'Parameter pencarian tidak valid', errors: parsed.error.flatten().fieldErrors })
-    const { search, district, minRating, facility, featured, page, limit } = parsed.data
+    const { search, district, minRating, facility, featured, sort, page, limit } = parsed.data
     const where: Prisma.CoffeeShopWhereInput = {
+      isVerified: true,
       ...(search ? { OR: [{ name: { contains: search, mode: 'insensitive' } }, { district: { contains: search, mode: 'insensitive' } }] } : {}),
-      ...(district ? { district: { equals: district, mode: 'insensitive' } } : {}),
+      ...(district ? { district: { contains: district.trim(), mode: 'insensitive' } } : {}),
       ...(featured ? { isFeatured: featured === 'true' } : {}),
       ...(facility ? { facilities: { some: { facility: { slug: facility } } } } : {}),
     }
+
+    let orderBy: Prisma.CoffeeShopOrderByWithRelationInput | Prisma.CoffeeShopOrderByWithRelationInput[] = [{ isFeatured: 'desc' }, { createdAt: 'desc' }]
+    if (sort === 'popular') {
+      orderBy = [{ reviews: { _count: 'desc' } }, { createdAt: 'desc' }]
+    } else if (sort === 'new') {
+      orderBy = { createdAt: 'desc' }
+    }
+
     const [shops, total] = await prisma.$transaction([
-      prisma.coffeeShop.findMany({ where, include: cardInclude, orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }], skip: (page - 1) * limit, take: limit }),
+      prisma.coffeeShop.findMany({ where, include: cardInclude, orderBy, skip: (page - 1) * limit, take: limit }),
       prisma.coffeeShop.count({ where }),
     ])
     const results = shops.filter(shop => !minRating || shop.reviews.length === 0 || shop.reviews.reduce((totalRating, review) => totalRating + review.rating, 0) / shop.reviews.length >= minRating)
@@ -98,12 +130,74 @@ coffeeShopRouter.get('/', async (request, response, next) => {
   } catch (error) { return next(error) }
 })
 
+coffeeShopRouter.get('/nearby', async (request, response, next) => {
+  try {
+    const parsed = nearbyQuery.safeParse(request.query)
+    if (!parsed.success) {
+      return response.status(400).json({
+        success: false,
+        message: 'Parameter koordinat (lat, lng) tidak valid',
+        errors: parsed.error.flatten().fieldErrors,
+      })
+    }
+
+    const { lat, lng, radius, limit } = parsed.data
+
+    const shops = await prisma.coffeeShop.findMany({
+      where: {
+        isVerified: true,
+        latitude: { not: null },
+        longitude: { not: null },
+      },
+      include: cardInclude,
+    })
+
+    const shopsWithDistance = shops.map((shop) => {
+      const distance = calculateDistance(lat, lng, shop.latitude!, shop.longitude!)
+      const rating = shop.reviews.length
+        ? shop.reviews.reduce((sum, review) => sum + review.rating, 0) / shop.reviews.length
+        : 0
+
+      return {
+        ...toCard(shop),
+        rating,
+        distance: Math.round(distance * 10) / 10,
+      }
+    })
+
+    const filteredAndSorted = shopsWithDistance
+      .filter((shop) => shop.distance <= radius)
+      .sort((a, b) => {
+        // Sistem Skor Gabungan (Composite Scoring):
+        // Menggabungkan rating (makin tinggi makin baik) dan jarak (makin dekat makin baik).
+        // Skor = (rating * 1.5) - (jarak * 0.3)
+        // Kedai dengan skor tertinggi akan berada di urutan paling atas.
+        const scoreA = (a.rating * 1.5) - (a.distance * 0.3)
+        const scoreB = (b.rating * 1.5) - (b.distance * 0.3)
+        return scoreB - scoreA
+      })
+      .slice(0, limit)
+
+    return response.json({
+      success: true,
+      data: filteredAndSorted,
+      meta: {
+        userLocation: { lat, lng },
+        radius,
+        totalFound: filteredAndSorted.length,
+      },
+    })
+  } catch (error) {
+    return next(error)
+  }
+})
+
 coffeeShopRouter.get('/:slug', async (request, response, next) => {
   try {
     const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).safeParse(request.params.slug)
     if (!slug.success) return response.status(400).json({ success: false, message: 'Slug coffee shop tidak valid' })
     const shop = await prisma.coffeeShop.findUnique({ where: { slug: slug.data }, include: { categories: { include: { category: true } }, facilities: { include: { facility: true } }, images: { orderBy: { createdAt: 'asc' } }, menus: { orderBy: { createdAt: 'asc' } }, promotions: { where: { isActive: true }, orderBy: { createdAt: 'desc' } }, reviews: { include: { user: { select: { name: true } } }, orderBy: { createdAt: 'desc' } }, subscription: true } })
-    if (!shop) return response.status(404).json({ success: false, message: 'Coffee shop tidak ditemukan' })
+    if (!shop || !shop.isVerified) return response.status(404).json({ success: false, message: 'Coffee shop tidak ditemukan' })
     const rating = shop.reviews.length ? shop.reviews.reduce((sum, review) => sum + review.rating, 0) / shop.reviews.length : null
     return response.json({ success: true, data: { ...shop, rating, reviewCount: shop.reviews.length } })
   } catch (error) { return next(error) }
@@ -115,12 +209,13 @@ coffeeShopRouter.post('/', authenticate, authorize('OWNER', 'ADMIN'), upload.sin
     if (!parsed.success) return response.status(400).json({ success: false, message: 'Data coffee shop tidak valid', errors: parsed.error.flatten().fieldErrors })
 
     const slug = await uniqueSlug(parsed.data.name)
+    const imageUrl = await uploadToCloudinaryIfNeeded(request.file)
     const shop = await prisma.coffeeShop.create({
       data: {
         ...parsed.data,
         slug,
         ownerId: request.auth!.userId,
-        ...(request.file ? { images: { create: { imageUrl: `/uploads/${request.file.filename}` } } } : {}),
+        ...(imageUrl ? { images: { create: { imageUrl } } } : {}),
       },
       include: { images: true },
     })
@@ -142,11 +237,12 @@ coffeeShopRouter.put('/:id', authenticate, authorize('OWNER', 'ADMIN'), upload.s
       data.slug = await uniqueSlug(data.name)
     }
 
-    if (request.file) {
+    const imageUrl = await uploadToCloudinaryIfNeeded(request.file)
+    if (imageUrl) {
       await prisma.coffeeShopImage.create({
         data: {
           coffeeShopId: shop.id,
-          imageUrl: `/uploads/${request.file.filename}`,
+          imageUrl,
         },
       })
     }

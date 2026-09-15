@@ -28,7 +28,7 @@ export type ApiCoffeeShopCard = {
   reviewCount: number;
 };
 
-export type ApiCoffeeShopDetail = ApiCoffeeShopCard & {
+export type ApiCoffeeShopDetail = Omit<ApiCoffeeShopCard, "facilities"> & {
   ownerId: string;
   description: string;
   address: string;
@@ -41,6 +41,7 @@ export type ApiCoffeeShopDetail = ApiCoffeeShopCard & {
   createdAt: string;
   updatedAt: string;
   categories: { category: { id: string; name: string; slug: string } }[];
+  facilities: { facility: ApiFacility }[];
   menus: { id: string; name: string; category?: string | null; description: string | null; price: number; image: string | null }[];
   images: { id: string; imageUrl: string }[];
   promotions: { id: string; title: string; description: string }[];
@@ -54,7 +55,8 @@ export type ListParams = {
   district?: string;
   minRating?: number;
   facility?: string;
-  featured?: boolean;
+  featured?: "true" | "false" | boolean;
+  sort?: "popular" | "new" | "rating";
   page?: number;
   limit?: number;
 };
@@ -82,11 +84,12 @@ async function get<T>(path: string): Promise<{ data: T; meta?: ListMeta }> {
 // "undefined"), supaya query string tetap bersih.
 export async function listCoffeeShops(params: ListParams = {}) {
   const query = new URLSearchParams();
-  if (params.search) query.set("search", params.search);
-  if (params.district) query.set("district", params.district);
+  if (params.search) query.set("search", params.search.trim());
+  if (params.district) query.set("district", params.district.trim());
   if (params.minRating) query.set("minRating", String(params.minRating));
   if (params.facility) query.set("facility", params.facility);
   if (params.featured !== undefined) query.set("featured", String(params.featured));
+  if (params.sort) query.set("sort", params.sort);
   if (params.page) query.set("page", String(params.page));
   if (params.limit) query.set("limit", String(params.limit));
 
@@ -158,6 +161,8 @@ export async function createCoffeeShop(
     openingHours: string;
     phone?: string;
     instagram?: string;
+    latitude: number;
+    longitude: number;
     image?: File;
   }
 ) {
@@ -170,6 +175,8 @@ export async function createCoffeeShop(
   formData.set("openingHours", input.openingHours);
   if (input.phone) formData.set("phone", input.phone);
   if (input.instagram) formData.set("instagram", input.instagram);
+  formData.set("latitude", String(input.latitude));
+  formData.set("longitude", String(input.longitude));
   if (input.image) formData.set("image", input.image);
 
   const response = await fetch(`${apiUrl}/coffee-shops`, {
@@ -199,6 +206,8 @@ export async function updateCoffeeShop(
     phone?: string;
     instagram?: string;
     status?: "OPEN" | "CLOSED" | "TEMPORARILY_CLOSED";
+    latitude?: number;
+    longitude?: number;
     image?: File;
   }
 ) {
@@ -212,6 +221,8 @@ export async function updateCoffeeShop(
   if (input.phone !== undefined) formData.set("phone", input.phone);
   if (input.instagram !== undefined) formData.set("instagram", input.instagram);
   if (input.status) formData.set("status", input.status);
+  if (input.latitude !== undefined) formData.set("latitude", String(input.latitude));
+  if (input.longitude !== undefined) formData.set("longitude", String(input.longitude));
   if (input.image) formData.set("image", input.image);
 
   const response = await fetch(`${apiUrl}/coffee-shops/${coffeeShopId}`, {
@@ -301,4 +312,46 @@ export async function createReview(
     throw new ApiError(payload.success ? "Permintaan gagal" : (payload.message || "Gagal mengirim ulasan"));
   }
   return payload.data;
+}
+
+export type NearbyCoffeeShop = ApiCoffeeShopCard & {
+  distance: number;
+  rating: number;
+};
+
+export type NearbyParams = {
+  lat: number;
+  lng: number;
+  radius?: number;
+  limit?: number;
+};
+
+export async function updateShopTaxonomy(
+  coffeeShopId: string,
+  token: string,
+  input: { facilityIds?: string[]; categoryIds?: string[] }
+) {
+  const response = await fetch(`${apiUrl}/coffee-shops/${coffeeShopId}/taxonomy`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  });
+  const payload = (await response.json()) as { success: boolean; data: any; message?: string };
+  if (!response.ok || !payload.success) {
+    throw new ApiError(payload.success ? "Permintaan gagal" : (payload.message || "Gagal memperbarui fasilitas"));
+  }
+  return payload.data;
+}
+
+export async function listNearbyCoffeeShops(params: NearbyParams) {
+  const query = new URLSearchParams();
+  query.set("lat", String(params.lat));
+  query.set("lng", String(params.lng));
+  if (params.radius) query.set("radius", String(params.radius));
+  if (params.limit) query.set("limit", String(params.limit));
+
+  return get<NearbyCoffeeShop[]>(`/coffee-shops/nearby?${query.toString()}`);
 }

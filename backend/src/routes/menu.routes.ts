@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authenticate, authorize, type AuthenticatedRequest } from '../middleware/auth.js'
-import { upload } from '../middleware/upload.js'
+import { upload, uploadToCloudinaryIfNeeded } from '../middleware/upload.js'
 
 export const menuRouter = Router({ mergeParams: true })
 
@@ -53,7 +53,8 @@ menuRouter.post('/', authenticate, authorize('OWNER', 'ADMIN'), upload.single('i
     if (!shop) return response.status(404).json({ success: false, message: 'Coffee shop tidak ditemukan' })
     if (forbidden) return response.status(403).json({ success: false, message: 'Anda tidak memiliki akses untuk mengelola menu coffee shop ini' })
 
-    const imagePath = request.file ? `/uploads/${request.file.filename}` : parsed.data.image
+    const uploadedUrl = await uploadToCloudinaryIfNeeded(request.file)
+    const imagePath = uploadedUrl ?? parsed.data.image
     const menu = await prisma.menu.create({ data: { ...parsed.data, image: imagePath, coffeeShopId: shop.id } })
     return response.status(201).json({ success: true, data: menu })
   } catch (error) { return next(error) }
@@ -75,7 +76,8 @@ menuRouter.put('/:menuId', authenticate, authorize('OWNER', 'ADMIN'), upload.sin
       return response.status(404).json({ success: false, message: 'Menu tidak ditemukan' })
     }
 
-    const imagePath = request.file ? `/uploads/${request.file.filename}` : parsed.data.image
+    const uploadedUrl = await uploadToCloudinaryIfNeeded(request.file)
+    const imagePath = uploadedUrl ?? parsed.data.image
     const updated = await prisma.menu.update({
       where: { id: menu.id },
       data: { ...parsed.data, ...(imagePath !== undefined ? { image: imagePath } : {}) },
