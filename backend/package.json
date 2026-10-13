@@ -13,6 +13,7 @@
     "prisma:seed:prod": "tsx prisma/seed-production.ts",
     "prisma:reset": "tsx prisma/reset-data.ts",
     "prisma:cleanup-test": "tsx prisma/cleanup-test-data.ts",
+    "db:create-admin": "tsx prisma/create-admin.ts",
     "check": "tsc --noEmit",
     "test": "vitest run"
   },
