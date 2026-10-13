@@ -10,7 +10,9 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:seed:prod": "tsx prisma/seed-production.ts",
     "prisma:reset": "tsx prisma/reset-data.ts",
+    "prisma:cleanup-test": "tsx prisma/cleanup-test-data.ts",
     "check": "tsc --noEmit",
     "test": "vitest run"
   },
