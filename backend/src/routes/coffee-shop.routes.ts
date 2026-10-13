@@ -67,7 +67,7 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 
 const cardInclude = {
   facilities: { include: { facility: true } },
-  images: { take: 1, orderBy: { createdAt: 'asc' as const } },
+  images: { take: 1, orderBy: { createdAt: 'desc' as const } },
   reviews: { select: { rating: true } },
   _count: { select: { reviews: true } },
 } satisfies Prisma.CoffeeShopInclude
@@ -196,7 +196,7 @@ coffeeShopRouter.get('/:slug', async (request, response, next) => {
   try {
     const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).safeParse(request.params.slug)
     if (!slug.success) return response.status(400).json({ success: false, message: 'Slug coffee shop tidak valid' })
-    const shop = await prisma.coffeeShop.findUnique({ where: { slug: slug.data }, include: { categories: { include: { category: true } }, facilities: { include: { facility: true } }, images: { orderBy: { createdAt: 'asc' } }, menus: { orderBy: { createdAt: 'asc' } }, promotions: { where: { isActive: true }, orderBy: { createdAt: 'desc' } }, reviews: { include: { user: { select: { name: true } } }, orderBy: { createdAt: 'desc' } }, subscription: true } })
+    const shop = await prisma.coffeeShop.findUnique({ where: { slug: slug.data }, include: { categories: { include: { category: true } }, facilities: { include: { facility: true } }, images: { orderBy: { createdAt: 'desc' } }, menus: { orderBy: { createdAt: 'asc' } }, promotions: { where: { isActive: true }, orderBy: { createdAt: 'desc' } }, reviews: { include: { user: { select: { name: true } } }, orderBy: { createdAt: 'desc' } }, subscription: true } })
     if (!shop || !shop.isVerified) return response.status(404).json({ success: false, message: 'Coffee shop tidak ditemukan' })
     const rating = shop.reviews.length ? shop.reviews.reduce((sum, review) => sum + review.rating, 0) / shop.reviews.length : null
     return response.json({ success: true, data: { ...shop, rating, reviewCount: shop.reviews.length } })

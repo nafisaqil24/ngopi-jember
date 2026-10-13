@@ -2,6 +2,7 @@ import cors from 'cors'
 import express from 'express'
 import helmet from 'helmet'
 import path from 'path'
+import fs from 'fs'
 import { authRouter } from './routes/auth.routes.js'
 import { coffeeShopRouter } from './routes/coffee-shop.routes.js'
 import { ownerRouter } from './routes/owner.routes.js'
@@ -40,6 +41,15 @@ app.use('/api/coffee-shops', coffeeShopRouter)
 app.use('/api/owner', ownerRouter)
 app.use('/api/admin', adminRouter)
 app.use('/api', referenceRouter)
+
+const frontendDist = path.join(process.cwd(), '../frontend/dist')
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist))
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next()
+    res.sendFile(path.join(frontendDist, 'index.html'))
+  })
+}
 
 app.use(notFoundHandler)
 app.use(errorHandler)

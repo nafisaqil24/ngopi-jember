@@ -355,3 +355,4 @@ export async function listNearbyCoffeeShops(params: NearbyParams) {
 
   return get<NearbyCoffeeShop[]>(`/coffee-shops/nearby?${query.toString()}`);
 }
+

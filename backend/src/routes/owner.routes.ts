@@ -22,7 +22,7 @@ ownerRouter.get('/coffee-shop', async (request: AuthenticatedRequest, response, 
       include: {
         categories: { include: { category: true } },
         facilities: { include: { facility: true } },
-        images: { orderBy: { createdAt: 'asc' } },
+        images: { orderBy: { createdAt: 'desc' } },
         reviews: { select: { rating: true } },
         menus: { orderBy: { createdAt: 'asc' } },
       },

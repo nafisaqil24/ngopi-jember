@@ -126,8 +126,11 @@ export default function CoffeeShopDetail() {
         transition={{ duration: 0.4 }}
         className="mx-auto max-w-7xl px-5 py-10"
       >
-        <Link to="/coffee-shops" className="text-sm font-bold text-indigo-600 inline-flex items-center gap-1 hover:underline">
-          ← Kembali menjelajah
+        <Link
+          to="/coffee-shops"
+          className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50/60 px-4 py-2 text-sm font-semibold text-indigo-600 transition-all duration-200 hover:bg-indigo-600 hover:text-white hover:scale-105 active:scale-95 shadow-xs"
+        >
+          Kembali menjelajah
         </Link>
 
         <motion.div
