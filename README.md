@@ -84,3 +84,49 @@ Password disimpan sebagai hash bcrypt, bukan teks biasa. Pendaftaran publik tida
 cd frontend && npm run build
 cd ../backend && npm run build
 ```
+
+## Deployment Production
+
+### Persiapan Database
+1. Siapkan PostgreSQL production (Neon, Supabase, Railway, atau VPS)
+2. Buat database `ngopi_jember`
+3. Set `DATABASE_URL` dan `DIRECT_URL` di `.env`
+
+### Environment Variables
+```bash
+cd backend
+cp .env.production.example .env
+# Edit .env dengan nilai production:
+# - DATABASE_URL, DIRECT_URL (Neon/PostgreSQL)
+# - CLIENT_URL (domain frontend production)
+# - JWT_SECRET (openssl rand -base64 48)
+# - CLOUDINARY_* (untuk upload gambar)
+# - ADMIN_EMAIL, ADMIN_NAME, ADMIN_PASSWORD (akun admin pertama)
+```
+
+### Deploy Backend
+```bash
+cd backend
+npm ci
+npm run prisma:generate
+npm run prisma:migrate deploy  # jalanin migrasi existing
+npm run prisma:seed:prod       # seed kategori & fasilitas saja
+npm run db:create-admin        # buat akun admin pertama
+npm run build
+npm start
+```
+
+### Deploy Frontend
+```bash
+cd frontend
+npm ci
+# Set VITE_API_URL di build atau env
+npm run build
+# Deploy folder dist/ ke Vercel/Netlify/VPS
+```
+
+### Verifikasi Pasca-Deploy
+1. `GET https://api.yourdomain.com/api/health` → `{ success: true }`
+2. `POST /api/auth/register` dengan role OWNER → dapat JWT
+3. Owner login → buat coffee shop → muncul di daftar publik
+4. Admin login → akses dashboard admin (phase 5+)
