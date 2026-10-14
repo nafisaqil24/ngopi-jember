@@ -12,9 +12,9 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:seed:prod": "tsx prisma/seed-production.ts",
     "prisma:reset": "tsx prisma/reset-data.ts",
+    "prisma:update-shops": "tsx prisma/update-coffee-shops.ts",
     "prisma:cleanup-test": "tsx prisma/cleanup-test-data.ts",
     "db:create-admin": "tsx prisma/create-admin.ts",
-    "db:clean": "tsx prisma/clean-production.ts",
     "check": "tsc --noEmit",
     "test": "vitest run"
   },
