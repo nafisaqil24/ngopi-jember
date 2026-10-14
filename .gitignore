@@ -2,3 +2,7 @@ node_modules/
 dist/
 .env*
 *.log
+.superpowers/
+archive/
+HANDOFF.md
+docs/superpowers/
