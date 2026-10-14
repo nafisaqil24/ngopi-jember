@@ -60,7 +60,7 @@ const base = (
   imageUrl: images[id % 4],
   menu: [
     { name: "Es Kopi Susu", price: "Rp18.000" },
-    { name: "Cappuccino", price: "Rp24.000" },,
+    { name: "Cappuccino", price: "Rp24.000" },
     { name: "Croissant Butter", price: "Rp19.000" },
   ],
   whatsapp: "6281234567890",
