@@ -1,8 +1,21 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
 import request from 'supertest'
 import { app } from './app.js'
+import { deleteTestUser } from './test/helpers.js'
 
 describe('API Health and Error Handling', () => {
+  const createdEmails: string[] = []
+
+  afterAll(async () => {
+    try {
+      for (const email of createdEmails) {
+        await deleteTestUser(email)
+      }
+    } catch (err) {
+      console.error('App test cleanup error:', err)
+    }
+  })
+
   it('GET /api/health returns success status', async () => {
     const res = await request(app).get('/api/health')
     expect(res.status).toBe(200)
@@ -22,7 +35,8 @@ describe('API Health and Error Handling', () => {
   })
 
   it('PUT /api/coffee-shops/:id updates shop status to CLOSED in database', async () => {
-    const email = `owner_${Date.now()}@test.com`
+    const email = `owner_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`
+    createdEmails.push(email)
     const regRes = await request(app)
       .post('/api/auth/register')
       .send({ name: 'Test Owner', email, password: 'Password123!', role: 'OWNER' })

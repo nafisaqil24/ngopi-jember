@@ -1,12 +1,33 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import request from 'supertest'
 import { app } from './app.js'
+import { createTestAdmin, deleteTestUser } from './test/helpers.js'
 
 describe('Comprehensive Security & API Audit', () => {
   let userToken = ''
   let ownerToken = ''
   let adminToken = ''
   let shopId = ''
+
+  let adminCredentials: { id: string; email: string; password: string } | null = null
+  const createdEmails: string[] = []
+
+  beforeAll(async () => {
+    adminCredentials = await createTestAdmin()
+  })
+
+  afterAll(async () => {
+    try {
+      for (const email of createdEmails) {
+        await deleteTestUser(email)
+      }
+      if (adminCredentials) {
+        await deleteTestUser(adminCredentials.email)
+      }
+    } catch (err) {
+      console.error('Audit test cleanup error:', err)
+    }
+  })
 
   it('1. Authentication & Role Authorization (401 & 403 checks)', async () => {
     // A. Access admin endpoint without token -> 401
@@ -15,9 +36,11 @@ describe('Comprehensive Security & API Audit', () => {
     expect(resNoToken.body.success).toBe(false)
 
     // Register normal user
+    const userEmail = `user_audit_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`
+    createdEmails.push(userEmail)
     const userReg = await request(app)
       .post('/api/auth/register')
-      .send({ name: 'User Audit', email: `user_audit_${Date.now()}@test.com`, password: 'Password123!', role: 'USER' })
+      .send({ name: 'User Audit', email: userEmail, password: 'Password123!', role: 'USER' })
     expect(userReg.status).toBe(201)
     userToken = userReg.body.data.token
 
@@ -43,9 +66,11 @@ describe('Comprehensive Security & API Audit', () => {
     expect(browseRes.body.success).toBe(true)
 
     // B. Register Owner
+    const ownerEmail = `owner_audit_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`
+    createdEmails.push(ownerEmail)
     const ownerReg = await request(app)
       .post('/api/auth/register')
-      .send({ name: 'Owner Audit', email: `owner_audit_${Date.now()}@test.com`, password: 'Password123!', role: 'OWNER' })
+      .send({ name: 'Owner Audit', email: ownerEmail, password: 'Password123!', role: 'OWNER' })
     expect(ownerReg.status).toBe(201)
     ownerToken = ownerReg.body.data.token
 
@@ -68,9 +93,10 @@ describe('Comprehensive Security & API Audit', () => {
     expect(createShopRes.body.data.isVerified).toBe(false)
 
     // D. Login as Admin and Verify Shop & Set Featured
+    expect(adminCredentials).not.toBeNull()
     const adminLogin = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'admin@ngopijember.test', password: 'Admin123!' })
+      .send({ email: adminCredentials!.email, password: adminCredentials!.password })
     expect(adminLogin.status).toBe(200)
     adminToken = adminLogin.body.data.token
 

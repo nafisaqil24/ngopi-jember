@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import request from 'supertest'
 import { app } from './app.js'
+import { createTestAdmin, deleteTestUser } from './test/helpers.js'
 
 describe('Comprehensive End-to-End System Audit', () => {
   let userToken = ''
@@ -8,14 +9,37 @@ describe('Comprehensive End-to-End System Audit', () => {
   let adminToken = ''
   let shopId = ''
 
+  let adminCredentials: { id: string; email: string; password: string } | null = null
+  const createdEmails: string[] = []
+
+  beforeAll(async () => {
+    adminCredentials = await createTestAdmin()
+  })
+
+  afterAll(async () => {
+    try {
+      for (const email of createdEmails) {
+        await deleteTestUser(email)
+      }
+      if (adminCredentials) {
+        await deleteTestUser(adminCredentials.email)
+      }
+    } catch (err) {
+      console.error('Comprehensive audit cleanup error:', err)
+    }
+  })
+
   it('1. Environment & Database check', () => {
     const dbUrl = process.env.DATABASE_URL ?? ''
-    console.log('AUDIT DATABASE_URL:', dbUrl)
+    const match = dbUrl.match(/@([^:/?]+)/)
+    const host = match ? match[1] : 'unknown'
+    console.log('AUDIT DATABASE HOST:', host)
     expect(dbUrl).toBeDefined()
   })
 
   it('2. User Role Flow (Register, Login, Browse)', async () => {
-    const email = `audit_user_${Date.now()}@test.com`
+    const email = `audit_user_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`
+    createdEmails.push(email)
     const regRes = await request(app)
       .post('/api/auth/register')
       .send({ name: 'Audit User', email, password: 'Password123!', role: 'USER' })
@@ -34,7 +58,8 @@ describe('Comprehensive End-to-End System Audit', () => {
   })
 
   it('3. Owner Role Flow (Register, Create Shop with Image, Add Menu)', async () => {
-    const email = `audit_owner_${Date.now()}@test.com`
+    const email = `audit_owner_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`
+    createdEmails.push(email)
     const regRes = await request(app)
       .post('/api/auth/register')
       .send({ name: 'Audit Owner', email, password: 'Password123!', role: 'OWNER' })
@@ -66,12 +91,13 @@ describe('Comprehensive End-to-End System Audit', () => {
       .send({ name: 'Espresso Audit', price: 20000, category: 'Coffee' })
     expect(menuRes.status).toBe(201)
     console.log('OWNER ADD MENU RESPONSE:', JSON.stringify(menuRes.body, null, 2))
-  })
+  }, 10000)
 
   it('4. Admin Role Flow (Login Admin, Get Shops, Verify Shop, Auth 403 check)', async () => {
+    expect(adminCredentials).not.toBeNull()
     const adminLogin = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'admin@ngopijember.test', password: 'Admin123!' })
+      .send({ email: adminCredentials!.email, password: adminCredentials!.password })
     expect(adminLogin.status).toBe(200)
     adminToken = adminLogin.body.data.token
 
