@@ -46,13 +46,70 @@ API akan berjalan di `http://localhost:4000` secara default.
 
 ## Environment variables
 
-| Variabel | Kegunaan |
+Semua nilai di bawah hanya placeholder. Isi nilai asli di `backend/.env` (jangan pernah di-commit).
+
+| Variabel | Wajib/Opsional | Kegunaan |
+| --- | --- | --- |
+| `DATABASE_URL` | Wajib | Koneksi PostgreSQL **pooled** (Neon: host ada `-pooler`, `pgbouncer=true`) — dipakai aplikasi saat runtime |
+| `DIRECT_URL` | Wajib | Koneksi PostgreSQL **direct** (Neon: tanpa `-pooler`) — dipakai Prisma migrate |
+| `PORT` | Opsional | Port API, default `4000` |
+| `CLIENT_URL` | Opsional | Asal frontend yang diizinkan CORS, default `http://localhost:5173` |
+| `NODE_ENV` | Opsional | Mode eksekusi (`development` / `test` / `production`) |
+| `JWT_SECRET` | Wajib | Kunci acak minimal 32 karakter untuk menandatangani JWT |
+| `CLOUDINARY_CLOUD_NAME` | Opsional | Nama cloud Cloudinary untuk upload gambar |
+| `CLOUDINARY_API_KEY` | Opsional | API key Cloudinary |
+| `CLOUDINARY_API_SECRET` | Opsional | API secret Cloudinary (rahasia) |
+| `SEED_ADMIN_EMAIL` | Opsional | Email akun ADMIN yang dibuat saat `prisma:seed` |
+| `SEED_ADMIN_PASSWORD` | Opsional | Password akun ADMIN saat seed (rahasia) |
+| `SEED_ADMIN_NAME` | Opsional | Nama akun ADMIN saat seed |
+| `SEED_OWNER_EMAIL` | Opsional | Email akun OWNER yang dibuat saat `prisma:seed` |
+| `SEED_OWNER_PASSWORD` | Opsional | Password akun OWNER saat seed (rahasia) |
+| `SEED_OWNER_NAME` | Opsional | Nama akun OWNER saat seed |
+| `ADMIN_EMAIL` / `ADMIN_NAME` / `ADMIN_PASSWORD` | Opsional | Akun admin pertama untuk script `db:create-admin` (bukan seed) |
+
+## Database (Neon)
+
+Proyek memakai PostgreSQL Neon yang butuh **dua URL berbeda** ke **database yang sama**:
+
+- `DATABASE_URL` — **pooled connection**. Host mengandung `-pooler`, memakai `pgbouncer=true` dan `sslmode=require`. Dipakai aplikasi saat runtime karena tahan terhadap banyak koneksi.
+- `DIRECT_URL` — **direct connection**. Host tanpa `-pooler`. Dipakai Prisma untuk migrasi (`prisma migrate`).
+
+Contoh format (placeholder):
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@ep-xxxx-pooler.region.aws.neon.tech/DBNAME?sslmode=require&pgbouncer=true"
+DIRECT_URL="postgresql://USER:PASSWORD@ep-xxxx.region.aws.neon.tech/DBNAME?sslmode=require"
+```
+
+Keduanya **wajib menunjuk database yang sama**; hanya beda jalur koneksi (pooled vs direct).
+
+## Seed & Maintenance
+
+Perintah dijalankan dari folder `backend`.
+
+| Perintah | Fungsi |
 | --- | --- |
-| `DATABASE_URL` | Koneksi PostgreSQL Prisma |
-| `PORT` | Port API, default `4000` |
-| `CLIENT_URL` | Asal frontend yang diizinkan CORS |
-| `NODE_ENV` | Mode eksekusi aplikasi |
-| `JWT_SECRET` | Kunci acak minimal 32 karakter untuk menandatangani JWT |
+| `npm run prisma:seed` | Seed idempotent: kategori & fasilitas (opsional akun ADMIN/OWNER dari `SEED_*`) |
+| `npm run prisma:seed:prod` | Seed kategori & fasilitas saja (tanpa akun contoh) |
+| `npm run prisma:reset` | **Preview** jumlah row per tabel (tidak menghapus) |
+| `npm run prisma:reset -- --confirm` | Kosongkan seluruh tabel (hapus data) |
+| `npm run prisma:cleanup-test` | **Preview** data test yang akan dihapus (user `@test.com` / `@ngopijember.test` + coffee shop-nya) |
+| `npm run prisma:cleanup-test -- --confirm` | Hapus data test tersebut |
+
+Selalu jalankan mode preview dulu sebelum memakai `--confirm`.
+
+Format `prisma/data/coffee-shops.csv` (pemisah koma, kutip ganda untuk nilai ber-koma):
+
+- Kolom: `name, address, district, latitude, longitude, description, priceRange, openingHours, phone, instagram, categories, facilities`
+- `categories` dan `facilities` diisi satu sel dengan pemisah `|` (contoh: `WiFi|Colokan Listrik|AC`)
+- Baris dengan nama diawali `CONTOH` dilewati (hanya contoh format)
+
+## Testing
+
+- Test wajib memakai `backend/.env.test` yang menunjuk ke Neon **branch "test"**, bukan DB utama.
+- Guard di `src/test/setup-env.ts` menolak (throw error) jika `DATABASE_URL`/`DIRECT_URL` test sama dengan host DB utama.
+- Test bersifat **mandiri**: membuat user & data sendiri lewat helper di `src/test/helpers.ts`, lalu menghapusnya lagi di `afterAll` sehingga DB test kembali bersih.
+- Jalankan: `npm test` (dari folder `backend`).
 
 ## API Phase 3
 
