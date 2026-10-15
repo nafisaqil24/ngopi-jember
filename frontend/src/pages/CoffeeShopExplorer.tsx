@@ -214,7 +214,7 @@ export default function CoffeeShopExplorer() {
               <span className="font-mono text-xs font-bold text-terracotta bg-white/5 px-3 py-1 rounded-full border border-terracotta/40">
                  LOKASI 
               </span>
-              <h2 className="mt-2 text-xl font-black text-cream">Rekomendasi Coffee Shop Terdekat & Rating Tertinggi</h2>
+              <h2 className="mt-2 text-xl font-black text-white">Rekomendasi Coffee Shop Terdekat & Rating Tertinggi</h2>
               <p className="mt-1 text-sm text-cream/70">
                 Temukan kedai terbaik di sekitar Anda berdasarkan lokasi GPS atau pilih wilayah di Jember.
               </p>

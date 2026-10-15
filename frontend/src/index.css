@@ -108,12 +108,6 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3, h4 {
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-}
-
 /* Accessible, consistent focus ring (visible even on outline-none controls) */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--primary);
@@ -216,6 +210,12 @@ h1, h2, h3, h4 {
 }
 
 @layer base {
+  h1, h2, h3, h4 {
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, ::before, ::after {
       animation-duration: 0.01ms !important;

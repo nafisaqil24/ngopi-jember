@@ -24,7 +24,46 @@ const listQuery = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(12),
 })
 
-const createShop = z.object({
+// Batas wilayah Jember (bounding box) untuk validasi koordinat.
+const JEMBER_LAT_MIN = -8.6
+const JEMBER_LAT_MAX = -7.8
+const JEMBER_LNG_MIN = 113.2
+const JEMBER_LNG_MAX = 114.2
+
+// String kosong / null dari multipart TIDAK boleh terbaca sebagai angka 0.
+// Nilai kosong diperlakukan sebagai "tidak diisi" (undefined).
+const emptyToUndefined = (value: unknown) => (value === '' || value === null ? undefined : value)
+
+const latitudeField = z.preprocess(
+  emptyToUndefined,
+  z.coerce.number()
+    .min(JEMBER_LAT_MIN, { message: `Latitude harus di wilayah Jember (${JEMBER_LAT_MIN} s.d. ${JEMBER_LAT_MAX})` })
+    .max(JEMBER_LAT_MAX, { message: `Latitude harus di wilayah Jember (${JEMBER_LAT_MIN} s.d. ${JEMBER_LAT_MAX})` })
+    .optional(),
+)
+
+const longitudeField = z.preprocess(
+  emptyToUndefined,
+  z.coerce.number()
+    .min(JEMBER_LNG_MIN, { message: `Longitude harus di wilayah Jember (${JEMBER_LNG_MIN} s.d. ${JEMBER_LNG_MAX})` })
+    .max(JEMBER_LNG_MAX, { message: `Longitude harus di wilayah Jember (${JEMBER_LNG_MIN} s.d. ${JEMBER_LNG_MAX})` })
+    .optional(),
+)
+
+// Aturan: latitude & longitude harus diisi KEDUANYA atau dikosongkan KEDUANYA.
+const coordinatesRule = (data: { latitude?: number; longitude?: number }, ctx: z.RefinementCtx) => {
+  const hasLat = data.latitude !== undefined && data.latitude !== null
+  const hasLng = data.longitude !== undefined && data.longitude !== null
+  if (hasLat !== hasLng) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['latitude'],
+      message: 'Latitude dan longitude harus diisi keduanya atau dikosongkan keduanya',
+    })
+  }
+}
+
+const shopFields = z.object({
   name: z.string().trim().min(3).max(120),
   description: z.string().trim().min(10).max(2000),
   address: z.string().trim().min(5).max(200),
@@ -33,12 +72,15 @@ const createShop = z.object({
   openingHours: z.string().trim().min(1).max(200),
   phone: z.string().trim().max(30).optional(),
   instagram: z.string().trim().max(200).optional(),
-  latitude: z.coerce.number().min(-90).max(90),
-  longitude: z.coerce.number().min(-180).max(180),
+  latitude: latitudeField,
+  longitude: longitudeField,
   status: z.enum(['OPEN', 'CLOSED', 'TEMPORARILY_CLOSED']).optional(),
 })
 
-const updateShop = createShop.partial()
+const createShop = shopFields.superRefine(coordinatesRule)
+
+// updateShop sengaja TIDAK memuat ownerId/isVerified sehingga tidak bisa diubah lewat endpoint ini.
+const updateShop = shopFields.partial().superRefine(coordinatesRule)
 
 const assignRefs = z.object({
   categoryIds: z.array(z.string().cuid()).optional(),

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
@@ -260,6 +261,12 @@ export default function AdminDashboard() {
                            </td>
                            <td className="px-6 py-4 text-right">
                              <div className="flex items-center justify-end gap-2">
+                                <Link
+                                  to={`/admin/coffee-shops/${shop.id}/edit`}
+                                  className="rounded-lg border border-strong bg-white px-3 py-1.5 text-xs font-semibold text-body transition hover:bg-info-soft"
+                                >
+                                  Edit
+                                </Link>
 {shop.isVerified ? (
                                   <button
                                     disabled={actionLoadingId === shop.id}

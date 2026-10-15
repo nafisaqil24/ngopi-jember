@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import PrivateRoute from "./components/auth/PrivateRoute";
 import OwnerDashboard from "./pages/owner/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminCoffeeShopEdit from "./pages/admin/CoffeeShopEdit";
 import { ToastProvider } from "./components/common/Toast";
 
 // App.tsx sekarang HANYA berisi routing. Sebelumnya file ini menumpuk
@@ -51,6 +52,14 @@ export default function App() {
           element={
             <PrivateRoute allowedRoles={["ADMIN"]}>
               <AdminDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/coffee-shops/:id/edit"
+          element={
+            <PrivateRoute allowedRoles={["ADMIN"]}>
+              <AdminCoffeeShopEdit />
             </PrivateRoute>
           }
         />

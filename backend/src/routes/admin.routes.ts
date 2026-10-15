@@ -40,6 +40,31 @@ adminRouter.get('/coffee-shops', async (_request, response, next) => {
   }
 })
 
+// GET /api/admin/coffee-shops/:id - Detail satu coffee shop untuk admin (TANPA filter isVerified).
+// Include lengkap: categories, facilities, images, menus, owner.
+adminRouter.get('/coffee-shops/:id', async (request, response, next) => {
+  try {
+    const id = toParam(request.params.id)
+    if (!id) return response.status(400).json({ success: false, message: 'ID coffee shop tidak valid' })
+
+    const shop = await prisma.coffeeShop.findUnique({
+      where: { id },
+      include: {
+        categories: { include: { category: true } },
+        facilities: { include: { facility: true } },
+        images: { orderBy: { createdAt: 'desc' } },
+        menus: { orderBy: { createdAt: 'asc' } },
+        owner: { select: { id: true, name: true, email: true } },
+      },
+    })
+    if (!shop) return response.status(404).json({ success: false, message: 'Coffee shop tidak ditemukan' })
+
+    return response.json({ success: true, data: shop })
+  } catch (error) {
+    return next(error)
+  }
+})
+
 // PATCH /api/admin/coffee-shops/:id/verify - Verifikasi atau batalkan verifikasi coffee shop
 adminRouter.patch('/coffee-shops/:id/verify', async (request: AuthenticatedRequest, response, next) => {
   try {
