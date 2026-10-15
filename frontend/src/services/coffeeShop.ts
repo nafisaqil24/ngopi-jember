@@ -356,3 +356,52 @@ export async function listNearbyCoffeeShops(params: NearbyParams) {
   return get<NearbyCoffeeShop[]>(`/coffee-shops/nearby?${query.toString()}`);
 }
 
+// Tipe event analitik, harus sama persis dengan enum AnalyticsEventType di backend.
+export type AnalyticsEventType =
+  | "PROFILE_VIEW"
+  | "MAP_CLICK"
+  | "WHATSAPP_CLICK"
+  | "INSTAGRAM_CLICK"
+  | "MENU_VIEW"
+  | "PROMOTION_VIEW";
+
+// Mencatat event analitik (fire-and-forget). Error ditelan diam-diam supaya
+// tidak pernah mengganggu UI pengguna.
+export function trackEvent(coffeeShopId: string, eventType: AnalyticsEventType): void {
+  if (!coffeeShopId) return;
+  try {
+    fetch(`${apiUrl}/coffee-shops/${coffeeShopId}/events`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventType }),
+      keepalive: true,
+    }).catch(() => {
+      /* diamkan error jaringan */
+    });
+  } catch {
+    /* diamkan error tak terduga */
+  }
+}
+
+export type OwnerAnalyticsEvent = { eventType: AnalyticsEventType; count: number };
+
+export type OwnerAnalytics = {
+  days: number;
+  since: string;
+  total: number;
+  events: OwnerAnalyticsEvent[];
+  reviewCount: number;
+  averageRating: number | null;
+};
+
+export async function getOwnerAnalytics(token: string, days: 7 | 30 = 30): Promise<OwnerAnalytics> {
+  const response = await fetch(`${apiUrl}/owner/analytics?days=${days}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const payload = (await response.json()) as { success: boolean; data: OwnerAnalytics; message?: string };
+  if (!response.ok || !payload.success) {
+    throw new ApiError(payload.success ? "Permintaan gagal" : (payload.message || "Gagal memuat analitik"));
+  }
+  return payload.data;
+}
+

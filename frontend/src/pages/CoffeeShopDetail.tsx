@@ -1,11 +1,27 @@
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import MainLayout from "../layouts/MainLayout";
-import { getCoffeeShopBySlug, getImageUrl, createReview, ApiError, type ApiCoffeeShopDetail } from "../services/coffeeShop";
+import { getCoffeeShopBySlug, getImageUrl, createReview, trackEvent, ApiError, type ApiCoffeeShopDetail } from "../services/coffeeShop";
 import { useAuth } from "../hooks/useAuth";
 import NotFound from "./NotFound";
+
+// Catat event analitik "sekali per sesi browser" untuk sebuah kedai.
+// Mengembalikan true bila event baru saja dicatat (belum pernah di sesi ini).
+function trackOncePerSession(coffeeShopId: string, key: string, eventType: Parameters<typeof trackEvent>[1]): boolean {
+  try {
+    const storageKey = `ngopi_tracked_${key}_${coffeeShopId}`;
+    if (sessionStorage.getItem(storageKey)) return false;
+    sessionStorage.setItem(storageKey, "1");
+    trackEvent(coffeeShopId, eventType);
+    return true;
+  } catch {
+    // sessionStorage bisa diblokir (mode privat); tetap catat tanpa guard.
+    trackEvent(coffeeShopId, eventType);
+    return true;
+  }
+}
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -97,6 +113,19 @@ export default function CoffeeShopDetail() {
       })
       .finally(() => setLoading(false));
   }, [slug]);
+
+  // Catat PROFILE_VIEW sekali per kedai per sesi browser begitu data kedai siap.
+  // Menu ditampilkan langsung di halaman ini, jadi MENU_VIEW juga dicatat
+  // sekali per sesi (tidak ada tombol/halaman menu terpisah).
+  const menuTrackedRef = useRef(false);
+  useEffect(() => {
+    if (!shop) return;
+    trackOncePerSession(shop.id, "view", "PROFILE_VIEW");
+    if (!menuTrackedRef.current && shop.menus.length > 0) {
+      menuTrackedRef.current = true;
+      trackOncePerSession(shop.id, "menu", "MENU_VIEW");
+    }
+  }, [shop]);
 
   if (loading) {
     return (
@@ -339,6 +368,7 @@ export default function CoffeeShopDetail() {
                   href={whatsappUrl}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() => trackEvent(shop.id, "WHATSAPP_CLICK")}
                   className="rounded-xl bg-[#25D366] py-3 text-center text-sm font-bold text-white hover:scale-105 active:scale-95 transition shadow-sm"
                 >
                   WhatsApp
@@ -349,6 +379,7 @@ export default function CoffeeShopDetail() {
                   href={instagramUrl}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() => trackEvent(shop.id, "INSTAGRAM_CLICK")}
                   className="rounded-xl border border-slate-300 py-3 text-center text-sm font-bold text-slate-900 hover:bg-slate-100 hover:scale-105 active:scale-95 transition shadow-2xs"
                 >
                   Instagram
@@ -358,6 +389,7 @@ export default function CoffeeShopDetail() {
                 href={buildMapsUrl(shop)}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() => trackEvent(shop.id, "MAP_CLICK")}
                 className="rounded-xl border border-slate-300 py-3 text-center text-sm font-bold text-slate-900 hover:bg-slate-100 hover:scale-105 active:scale-95 transition shadow-2xs"
               >
                 Buka Google Maps

@@ -1,5 +1,6 @@
-import { Prisma } from '@prisma/client'
+import { AnalyticsEventType, Prisma } from '@prisma/client'
 import { Router } from 'express'
+import rateLimit from 'express-rate-limit'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authenticate, authorize, type AuthenticatedRequest } from '../middleware/auth.js'
@@ -49,6 +50,23 @@ const nearbyQuery = z.object({
   lng: z.coerce.number().min(-180).max(180),
   radius: z.coerce.number().positive().default(25),
   limit: z.coerce.number().int().min(1).max(30).default(10),
+})
+
+const eventInput = z.object({
+  eventType: z.nativeEnum(AnalyticsEventType),
+})
+
+// Rate limit ringan untuk pencatatan event publik, mengikuti pola di
+// auth.routes.ts (express-rate-limit). 60 request/menit per IP.
+const eventLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Terlalu banyak permintaan, coba lagi nanti',
+  },
 })
 
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -200,6 +218,24 @@ coffeeShopRouter.get('/:slug', async (request, response, next) => {
     if (!shop || !shop.isVerified) return response.status(404).json({ success: false, message: 'Coffee shop tidak ditemukan' })
     const rating = shop.reviews.length ? shop.reviews.reduce((sum, review) => sum + review.rating, 0) / shop.reviews.length : null
     return response.json({ success: true, data: { ...shop, rating, reviewCount: shop.reviews.length } })
+  } catch (error) { return next(error) }
+})
+
+// POST /api/coffee-shops/:id/events
+// Pencatatan analitik publik (mis. view, klik WhatsApp/Instagram/Maps, lihat menu).
+// Hanya kedai yang ADA dan sudah isVerified yang boleh dicatat. Tidak ada
+// data pribadi yang disimpan (hanya eventType sesuai enum AnalyticsEventType).
+coffeeShopRouter.post('/:id/events', eventLimiter, async (request, response, next) => {
+  try {
+    const parsed = eventInput.safeParse(request.body)
+    if (!parsed.success) return response.status(400).json({ success: false, message: 'Jenis event tidak valid', errors: parsed.error.flatten().fieldErrors })
+
+    const id = Array.isArray(request.params.id) ? request.params.id[0] : request.params.id
+    const shop = await prisma.coffeeShop.findUnique({ where: { id }, select: { id: true, isVerified: true } })
+    if (!shop || !shop.isVerified) return response.status(404).json({ success: false, message: 'Coffee shop tidak ditemukan' })
+
+    await prisma.analyticsEvent.create({ data: { coffeeShopId: shop.id, eventType: parsed.data.eventType } })
+    return response.status(201).json({ success: true })
   } catch (error) { return next(error) }
 })
 

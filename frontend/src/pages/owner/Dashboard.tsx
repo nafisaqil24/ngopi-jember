@@ -11,11 +11,24 @@ import {
   deleteMenu,
   listFacilities,
   updateShopTaxonomy,
+  getOwnerAnalytics,
   getImageUrl,
   ApiError,
   type ApiOwnerShop,
   type ApiFacility,
+  type OwnerAnalytics,
+  type AnalyticsEventType,
 } from "../../services/coffeeShop";
+
+// Label bahasa Indonesia untuk tiap jenis event analitik.
+const EVENT_LABELS: Record<AnalyticsEventType, string> = {
+  PROFILE_VIEW: "Kunjungan Halaman",
+  MENU_VIEW: "Lihat Menu",
+  MAP_CLICK: "Klik Google Maps",
+  WHATSAPP_CLICK: "Klik WhatsApp",
+  INSTAGRAM_CLICK: "Klik Instagram",
+  PROMOTION_VIEW: "Lihat Promo",
+};
 
 export default function OwnerDashboard() {
   const { user, token } = useAuth();
@@ -40,7 +53,13 @@ export default function OwnerDashboard() {
   const [creatingShop, setCreatingShop] = useState(false);
   const [createShopError, setCreateShopError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"profile" | "menu">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "menu" | "analytics">("profile");
+
+  // State Analitik
+  const [analyticsDays, setAnalyticsDays] = useState<7 | 30>(30);
+  const [analytics, setAnalytics] = useState<OwnerAnalytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState("");
 
   // Form Edit Coffee Shop
   const [isEditingShop, setIsEditingShop] = useState(false);
@@ -172,6 +191,17 @@ export default function OwnerDashboard() {
       .then((res) => setAllFacilities(res.data))
       .catch(() => setAllFacilities([]));
   }, []);
+
+  // Muat data analitik saat tab analitik aktif atau rentang hari berubah.
+  useEffect(() => {
+    if (!token || activeTab !== "analytics") return;
+    setAnalyticsLoading(true);
+    setAnalyticsError("");
+    getOwnerAnalytics(token, analyticsDays)
+      .then((data) => setAnalytics(data))
+      .catch((err: any) => setAnalyticsError(err instanceof ApiError ? err.message : (err.message || "Gagal memuat analitik")))
+      .finally(() => setAnalyticsLoading(false));
+  }, [token, activeTab, analyticsDays]);
 
   async function handleCreateShop(e: React.FormEvent) {
     e.preventDefault();
@@ -573,6 +603,17 @@ export default function OwnerDashboard() {
                 <span>📋</span>
                 <span>Daftar Menu</span>
               </button>
+              <button
+                onClick={() => setActiveTab("analytics")}
+                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition flex items-center gap-3 ${
+                  activeTab === "analytics"
+                    ? "bg-terracotta text-white shadow-sm"
+                    : "text-espresso/70 hover:bg-espresso/5"
+                }`}
+              >
+                <span>📊</span>
+                <span>Analitik</span>
+              </button>
             </div>
 
             {/* Area Konten Utama (Beda Halaman / Tab) */}
@@ -821,21 +862,89 @@ export default function OwnerDashboard() {
                 </form>
               )}
             </div>
-              ) : (
+) : activeTab === "analytics" ? (
+                <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-espresso/10">
+                  <div className="mb-5 flex items-center justify-between">
+                    <h2 className="text-xl font-black">Analitik Coffee Shop</h2>
+                    <select
+                      value={analyticsDays}
+                      onChange={(e) => setAnalyticsDays(Number(e.target.value) as 7 | 30)}
+                      className="rounded-xl border border-espresso/15 bg-white px-3 py-2 text-sm outline-none focus:border-terracotta"
+                    >
+                      <option value={7}>7 hari terakhir</option>
+                      <option value={30}>30 hari terakhir</option>
+                    </select>
+                  </div>
+                  {analyticsLoading && (
+                    <div className="flex h-64 items-center justify-center rounded-xl bg-white/50">
+                      <div className="flex flex-col items-center gap-3 text-espresso/60">
+                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-terracotta border-t-transparent" />
+                        <p className="text-sm font-medium">Memuat analitik...</p>
+                      </div>
+                    </div>
+                  )}
+                  {analyticsError && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-center text-red-700">
+                      <p className="font-semibold">{analyticsError}</p>
+                    </div>
+                  )}
+                  {!analyticsLoading && !analyticsError && analytics && analytics.total === 0 && (
+                    <div className="rounded-xl border border-dashed border-espresso/20 bg-white p-10 text-center text-espresso/60">
+                      <p className="text-xl">📊</p>
+                      <p className="mt-2 font-bold text-espresso">Belum ada data analitik</p>
+                      <p className="mt-1 text-sm text-espresso/65">
+                        Data akan muncul saat pengunjung melihat halaman atau mengklik
+                        tombol di detail coffee shop.
+                      </p>
+                    </div>
+                  )}
+                  {!analyticsLoading && !analyticsError && analytics && analytics.total > 0 && (
+                    <>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {analytics.events.map((event) => (
+                          <div
+                            key={event.eventType}
+                            className="rounded-xl border border-espresso/15 bg-white p-5 shadow-sm"
+                          >
+                            <div className="text-xs font-bold text-espresso/60 uppercase tracking-wider mb-1">
+                              {EVENT_LABELS[event.eventType]}
+                            </div>
+                            <div className="text-3xl font-black text-terracotta">{event.count.toLocaleString("id-ID")}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-4 rounded-xl bg-espresso/5 p-4 text-center">
+                        <p className="text-sm text-espresso/70">Total Event</p>
+                        <p className="text-2xl font-black text-terracotta">{analytics.total.toLocaleString("id-ID")}</p>
+                      </div>
+                      <div className="mt-3 rounded-xl bg-espresso/5 p-4 text-center">
+                        <p className="text-sm text-espresso/70">Ulasan</p>
+                        <p className="text-2xl font-black text-terracotta">{analytics.reviewCount.toLocaleString("id-ID")}</p>
+                      </div>
+                      <div className="mt-3 rounded-xl bg-espresso/5 p-4 text-center">
+                        <p className="text-sm text-espresso/70">Rating Rata-rata</p>
+                        <p className="text-2xl font-black text-terracotta">
+                          {analytics.averageRating ? analytics.averageRating.toFixed(1) : "0.0"}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+) : (
                 <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-espresso/10">
                   {/* List Menu & Tombol Tambah */}
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-xl font-black">Daftar Menu</h3>
-                  <p className="text-sm text-espresso/65">Kelola makanan dan minuman di coffee shop kamu.</p>
-                </div>
-                <button
-                  onClick={() => setShowAddMenu(!showAddMenu)}
-                  className="rounded-xl bg-espresso px-4 py-2.5 text-sm font-bold text-cream hover:bg-espresso/90"
-                >
-                  {showAddMenu ? "Tutup Form" : "+ Tambah Menu Baru"}
-                </button>
-              </div>
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-xl font-black">Daftar Menu</h3>
+                      <p className="text-sm text-espresso/65">Kelola makanan dan minuman di coffee shop kamu.</p>
+                    </div>
+                    <button
+                      onClick={() => setShowAddMenu(!showAddMenu)}
+                      className="rounded-xl bg-espresso px-4 py-2.5 text-sm font-bold text-cream hover:bg-espresso/90"
+                    >
+                      {showAddMenu ? "Tutup Form" : "+ Tambah Menu Baru"}
+                    </button>
+                  </div>
 
               {/* Form Tambah Menu */}
               {showAddMenu && (

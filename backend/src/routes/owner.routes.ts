@@ -1,4 +1,6 @@
+import { AnalyticsEventType } from '@prisma/client'
 import { Router } from 'express'
+import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authenticate, authorize, type AuthenticatedRequest } from '../middleware/auth.js'
 
@@ -38,19 +40,31 @@ ownerRouter.get('/coffee-shop', async (request: AuthenticatedRequest, response, 
 })
 
 // GET /api/owner/analytics
-// Ringkasan statistik untuk dashboard: jumlah tiap jenis AnalyticsEvent
-// (profile view, klik Maps/WA/IG, menu view), plus jumlah review dan
-// rating rata-rata. Dihitung langsung dari database tiap request --
-// untuk skala project ini belum perlu caching.
+// Ringkasan statistik untuk dashboard owner. Hanya menghitung kedai milik
+// owner yang sedang login. Query opsional ?days=7 atau ?days=30 (default 30).
+// Mengembalikan jumlah per eventType (SEMUA tipe, termasuk yang bernilai 0)
+// supaya frontend tidak perlu menambal tipe yang kosong.
+const analyticsQuery = z.object({
+  days: z.coerce.number().int().refine((value) => value === 7 || value === 30, {
+    message: 'Rentang hari hanya boleh 7 atau 30',
+  }).default(30),
+})
+
 ownerRouter.get('/analytics', async (request: AuthenticatedRequest, response, next) => {
   try {
+    const parsed = analyticsQuery.safeParse(request.query)
+    if (!parsed.success) return response.status(400).json({ success: false, message: 'Parameter rentang hari tidak valid', errors: parsed.error.flatten().fieldErrors })
+
+    const days = parsed.data.days
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+
     const shop = await prisma.coffeeShop.findFirst({ where: { ownerId: request.auth!.userId }, select: { id: true } })
     if (!shop) return response.status(404).json({ success: false, message: 'Anda belum memiliki coffee shop terdaftar' })
 
     const [eventCounts, reviewAgg] = await prisma.$transaction([
       prisma.analyticsEvent.groupBy({
         by: ['eventType'],
-        where: { coffeeShopId: shop.id },
+        where: { coffeeShopId: shop.id, createdAt: { gte: since } },
         _count: { _all: true },
         orderBy: { eventType: 'asc' },
       }),
@@ -61,19 +75,22 @@ ownerRouter.get('/analytics', async (request: AuthenticatedRequest, response, ne
       }),
     ])
 
-    // eventCounts dari Prisma bentuknya array [{ eventType: 'PROFILE_VIEW', _count: { _all: 5 } }, ...]
-    // kita ratakan jadi object { PROFILE_VIEW: 5, MAP_CLICK: 2, ... } biar gampang dipakai di frontend.
-    const events = Object.fromEntries(eventCounts.map(item => [item.eventType, (item._count as any)._all]))
+    const counted = Object.fromEntries(eventCounts.map(item => [item.eventType, (item._count as any)._all]))
+
+    // Bangun daftar semua tipe event, isi 0 untuk tipe yang belum ada.
+    const events = Object.values(AnalyticsEventType).map(eventType => ({
+      eventType,
+      count: counted[eventType] ?? 0,
+    }))
+    const total = events.reduce((sum, item) => sum + item.count, 0)
 
     return response.json({
       success: true,
       data: {
-        profileViews: events.PROFILE_VIEW ?? 0,
-        mapClicks: events.MAP_CLICK ?? 0,
-        whatsappClicks: events.WHATSAPP_CLICK ?? 0,
-        instagramClicks: events.INSTAGRAM_CLICK ?? 0,
-        menuViews: events.MENU_VIEW ?? 0,
-        promotionViews: events.PROMOTION_VIEW ?? 0,
+        days,
+        since,
+        total,
+        events,
         reviewCount: reviewAgg._count._all,
         averageRating: reviewAgg._avg.rating,
       },
