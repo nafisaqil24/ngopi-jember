@@ -30,7 +30,7 @@ describe('API Health and Error Handling', () => {
     expect(res.status).toBe(404)
     expect(res.body).toEqual({
       success: false,
-      message: 'Endpoint API tidak ditemukan',
+      message: 'Endpoint tidak ditemukan',
     })
   })
 

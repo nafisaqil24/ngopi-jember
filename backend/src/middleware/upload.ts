@@ -3,6 +3,8 @@ import path from 'path'
 import fs from 'fs'
 import { v2 as cloudinary } from 'cloudinary'
 
+const isProduction = process.env.NODE_ENV === 'production'
+
 const uploadDir = path.join(process.cwd(), 'uploads')
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true })
@@ -13,6 +15,10 @@ const isCloudinaryConfigured = Boolean(
   process.env.CLOUDINARY_API_KEY &&
   process.env.CLOUDINARY_API_SECRET
 )
+
+if (isProduction && !isCloudinaryConfigured) {
+  throw new Error('FATAL: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET wajib diisi di production')
+}
 
 if (isCloudinaryConfigured) {
   cloudinary.config({
@@ -35,8 +41,8 @@ const diskStorage = multer.diskStorage({
 const memoryStorage = multer.memoryStorage()
 
 export const upload = multer({
-  storage: isCloudinaryConfigured ? memoryStorage : diskStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  storage: isProduction ? memoryStorage : (isCloudinaryConfigured ? memoryStorage : diskStorage),
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true)
