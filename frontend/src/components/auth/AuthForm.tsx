@@ -16,14 +16,14 @@ function Field({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-bold text-slate-900">
+    <label className="grid gap-1.5 text-sm font-bold text-heading">
       {label}
       <input
         required
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-indigo-600 transition shadow-2xs text-slate-950"
+        className="rounded-xl border border-strong px-4 py-3 font-normal outline-none focus:border-terracotta transition shadow-xs text-heading"
       />
     </label>
   );
@@ -103,20 +103,20 @@ export default function AuthForm({ register }: { register: boolean }) {
         transition={{ duration: 0.4 }}
         className="mx-auto grid min-h-[65vh] max-w-5xl items-center gap-10 px-5 py-14 md:grid-cols-2"
       >
-        <section className="hidden rounded-3xl bg-slate-900 p-10 text-slate-100 md:block shadow-xl">
-          <p className="font-mono text-xs font-bold text-indigo-400 tracking-wider">NGOPI JEMBER</p>
-          <h1 className="mt-3 text-4xl font-black leading-tight">
+        <section className="hidden rounded-3xl bg-espresso p-10 text-cream md:block shadow-xl">
+          <p className="font-mono text-xs font-bold text-terracotta tracking-wider">NGOPI JEMBER</p>
+          <h1 className="mt-3 text-4xl font-black leading-tight text-cream">
             {register ? "Mulai ceritakan kedaimu." : "Selamat datang kembali."}
           </h1>
-          <p className="mt-5 leading-7 text-slate-300 font-medium">
+          <p className="mt-5 leading-7 text-cream/80 font-medium">
             Satu tempat untuk menemukan dan membagikan pengalaman ngopi
             terbaik di Jember.
           </p>
         </section>
 
-        <section className={`rounded-3xl bg-white p-7 shadow-xl ring-1 ring-slate-300 sm:p-9 ${isShaking ? "animate-shake" : ""}`}>
-          <h1 className="text-3xl font-black text-slate-950">{register ? "Buat akun" : "Masuk"}</h1>
-          <p className="mt-2 text-sm text-slate-800 font-medium">
+        <section className={`rounded-3xl bg-white p-7 shadow-xl ring-1 ring-subtle sm:p-9 ${isShaking ? "animate-shake" : ""}`}>
+          <h1 className="text-3xl font-black text-heading">{register ? "Buat akun" : "Masuk"}</h1>
+          <p className="mt-2 text-sm text-body font-medium">
             {register
               ? "Daftar sebagai penikmat kopi atau pemilik kedai."
               : "Masuk untuk melanjutkan pengalamanmu."}
@@ -127,12 +127,12 @@ export default function AuthForm({ register }: { register: boolean }) {
               <Field label="Nama lengkap" value={form.name} onChange={(value) => set("name", value)} />
             )}
             {register && (
-              <label className="grid gap-2 text-sm font-bold text-slate-900">
+              <label className="grid gap-1.5 text-sm font-bold text-heading">
                 Daftar sebagai
                 <select
                   value={form.role}
                   onChange={(event) => set("role", event.target.value)}
-                  className="rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-indigo-600 bg-white text-slate-950"
+                  className="rounded-xl border border-strong px-4 py-3 font-normal outline-none focus:border-terracotta bg-white text-heading"
                 >
                   <option value="USER">User</option>
                   <option value="OWNER">Owner</option>
@@ -151,24 +151,24 @@ export default function AuthForm({ register }: { register: boolean }) {
             )}
             {!register && (
               <div className="flex items-center justify-between text-sm font-medium">
-                <label className="flex items-center gap-2 cursor-pointer text-slate-900">
+                <label className="flex items-center gap-2 cursor-pointer text-heading">
                   <input
                     type="checkbox"
                     checked={form.remember}
                     onChange={(event) => set("remember", event.target.checked)}
-                    className="rounded text-indigo-600 focus:ring-indigo-500"
+                    className="rounded text-terracotta focus:ring-terracotta"
                   />
                   Ingat saya
                 </label>
-                <a href="#lupa-password" className="font-bold text-indigo-600 hover:underline">
+                <a href="#lupa-password" className="font-bold text-terracotta hover:underline">
                   Lupa password?
                 </a>
               </div>
             )}
-            {message && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{message}</p>}
+            {message && <p className="rounded-xl bg-danger-soft px-4 py-3 text-sm font-bold text-danger">{message}</p>}
             <button
               disabled={loading}
-              className="rounded-xl bg-indigo-600 py-3.5 font-bold text-white shadow-md hover:bg-indigo-500 hover:scale-[1.02] active:scale-95 disabled:opacity-60 transition flex items-center justify-center gap-2"
+              className="mt-2 rounded-xl bg-terracotta py-3.5 font-bold text-white shadow-md hover:bg-terracotta-strong hover:scale-[1.02] active:scale-95 disabled:opacity-60 transition flex items-center justify-center gap-2"
             >
               {loading && (
                 <span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
@@ -177,9 +177,9 @@ export default function AuthForm({ register }: { register: boolean }) {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-800 font-medium">
+          <p className="mt-6 text-center text-sm text-body font-medium">
             {register ? "Sudah punya akun?" : "Belum punya akun?"}{" "}
-            <Link className="font-bold text-indigo-600 underline" to={register ? "/login" : "/register"}>
+            <Link className="font-bold text-terracotta underline" to={register ? "/login" : "/register"}>
               {register ? "Masuk" : "Daftar sekarang"}
             </Link>
           </p>

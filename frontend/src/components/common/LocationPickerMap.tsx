@@ -56,8 +56,8 @@ export default function LocationPickerMap({ latitude, longitude, onChange }: Loc
 
   return (
     <div className="space-y-2">
-      <div ref={containerRef} className="h-72 w-full rounded-xl border border-slate-300 shadow-inner z-0" />
-      <p className="text-xs text-slate-500 font-medium italic text-center">
+      <div ref={containerRef} className="h-72 w-full rounded-xl border border-strong shadow-inner z-0" />
+      <p className="text-xs text-muted font-medium italic text-center">
         💡 Tips: Klik di mana saja pada peta atau geser pin 📍 untuk meletakkan titik lokasi kedai Anda dengan akurat.
       </p>
     </div>

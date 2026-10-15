@@ -31,12 +31,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen flex-col relative selection:bg-indigo-500 selection:text-white">
+    <div className="flex min-h-screen flex-col relative selection:bg-terracotta selection:text-white">
       {/* Top Loading Progress Bar */}
       {isLoading && (
-        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-slate-100">
+        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-info-soft">
           <div
-            className="h-full bg-indigo-600 transition-all duration-300 ease-out"
+            className="h-full bg-terracotta transition-all duration-300 ease-out"
             style={{ width: `${loadingProgress}%` }}
           />
         </div>

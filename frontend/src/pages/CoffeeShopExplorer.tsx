@@ -74,7 +74,7 @@ function Select({
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm outline-none focus:border-indigo-600 shadow-2xs transition text-slate-950 font-medium"
+      className="rounded-xl border border-strong bg-white px-3.5 py-3 text-sm outline-none focus:border-terracotta shadow-xs transition text-heading font-medium"
     >
       <option value="">{label}</option>
       {items.map((item) => (
@@ -89,15 +89,15 @@ function Select({
 
 function Empty({ reset }: { reset: () => void }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-xs">
+    <div className="rounded-2xl border border-dashed border-strong bg-white px-6 py-16 text-center shadow-xs">
       <p className="text-4xl">☕</p>
-      <h2 className="mt-3 text-xl font-black text-slate-950">Coffee shop tidak ditemukan</h2>
-      <p className="mt-2 text-sm text-slate-800 font-medium">
+      <h2 className="mt-3 text-xl font-black text-heading">Coffee shop tidak ditemukan</h2>
+      <p className="mt-2 text-sm text-body font-medium">
         Coba ubah kata kunci atau hapus beberapa filter.
       </p>
       <button
         onClick={reset}
-        className="mt-5 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-md hover:bg-indigo-500 transition"
+        className="mt-5 rounded-xl bg-terracotta px-5 py-3 text-sm font-bold text-white shadow-md hover:bg-terracotta-strong transition"
       >
         Tampilkan semua
       </button>
@@ -200,22 +200,22 @@ export default function CoffeeShopExplorer() {
   return (
     <MainLayout>
       <main className="mx-auto max-w-7xl px-5 py-12">
-        <p className="font-mono text-xs font-bold text-indigo-700 tracking-wider">JELAJAHI</p>
-        <h1 className="mt-2 text-4xl font-black text-slate-950">Cari tempat ngopi yang pas.</h1>
-        <p className="mt-3 max-w-xl text-slate-800 font-medium">
+        <p className="font-mono text-xs font-bold text-terracotta-strong tracking-wider">JELAJAHI</p>
+        <h1 className="mt-2 text-4xl font-black text-heading">Cari tempat ngopi yang pas.</h1>
+        <p className="mt-3 max-w-xl text-body font-medium">
           Saring berdasarkan kebutuhanmu untuk menemukan tempat bertemu,
           bekerja, atau menikmati jeda.
         </p>
 
         {/* Widget Rekomendasi Berdasarkan Lokasi */}
-        <div className="mt-8 rounded-2xl bg-gradient-to-r from-indigo-900 to-indigo-950 p-6 text-white shadow-xl">
+        <div className="mt-8 rounded-2xl bg-gradient-to-r from-espresso to-[#2a241f] p-6 text-cream shadow-xl">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <span className="font-mono text-xs font-bold text-indigo-300 bg-indigo-800/60 px-3 py-1 rounded-lg border border-indigo-700/50">
+              <span className="font-mono text-xs font-bold text-terracotta bg-white/5 px-3 py-1 rounded-full border border-terracotta/40">
                  LOKASI 
               </span>
-              <h2 className="mt-2 text-xl font-black">Rekomendasi Coffee Shop Terdekat & Rating Tertinggi</h2>
-              <p className="mt-1 text-sm text-indigo-200">
+              <h2 className="mt-2 text-xl font-black text-cream">Rekomendasi Coffee Shop Terdekat & Rating Tertinggi</h2>
+              <p className="mt-1 text-sm text-cream/70">
                 Temukan kedai terbaik di sekitar Anda berdasarkan lokasi GPS atau pilih wilayah di Jember.
               </p>
             </div>
@@ -224,32 +224,32 @@ export default function CoffeeShopExplorer() {
                 type="button"
                 onClick={handleGetLocationGPS}
                 disabled={nearbyLoading}
-                className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-indigo-950 shadow-md hover:bg-slate-100 transition inline-flex items-center gap-2"
+                className="rounded-xl bg-terracotta px-5 py-3 text-sm font-bold text-white shadow-md hover:bg-terracotta-strong disabled:opacity-60 transition inline-flex items-center gap-2"
               >
                 <span>{nearbyLoading && mode === "nearby" ? "Mendeteksi..." : "📍 Gunakan Lokasi Saya (GPS)"}</span>
               </button>
               <select
                 onChange={(e) => handleSelectDistrictManual(e.target.value)}
-                className="rounded-xl border border-indigo-700 bg-indigo-900 px-3.5 py-3 text-sm font-bold text-white outline-none hover:bg-indigo-800 transition shadow-md"
+                className="rounded-xl border border-terracotta/40 bg-white/5 px-3.5 py-3 text-sm font-bold text-cream outline-none hover:bg-white/10 transition shadow-md"
                 defaultValue=""
               >
-                <option value="" disabled>Pilih Kecamatan di Jember...</option>
+                <option value="" disabled className="text-heading">Pilih Kecamatan di Jember...</option>
                 {JEMBER_DISTRICTS.map((d) => (
-                  <option key={d} value={d}>{d}</option>
+                  <option key={d} value={d} className="text-heading">{d}</option>
                 ))}
               </select>
             </div>
           </div>
 
           {mode === "nearby" && (
-            <div className="mt-5 pt-4 border-t border-indigo-800/80 flex items-center justify-between text-sm">
-              <span className="text-indigo-200 font-medium">
-                Menampilkan rekomendasi terdekat (diurutkan berdasarkan <b>Rating Tertinggi</b> &amp; Jarak)
+            <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between text-sm">
+              <span className="text-cream/70 font-medium">
+                Menampilkan rekomendasi terdekat (diurutkan berdasarkan <b className="text-cream">Rating Tertinggi</b> &amp; Jarak)
               </span>
               <button
                 type="button"
                 onClick={() => setMode("all")}
-                className="font-mono text-xs font-bold text-indigo-300 hover:underline"
+                className="font-mono text-xs font-bold text-terracotta hover:underline"
               >
                 ← Kembali ke Semua Coffee Shop
               </button>
@@ -257,11 +257,11 @@ export default function CoffeeShopExplorer() {
           )}
         </div>
 
-        <div className="mt-8 rounded-2xl bg-white p-5 shadow-xl ring-1 ring-slate-300">
+        <div className="mt-8 rounded-2xl bg-white p-5 shadow-lg ring-1 ring-subtle">
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3.5 outline-none focus:border-indigo-600 shadow-2xs transition text-slate-950 font-medium placeholder:text-slate-500"
+            className="w-full rounded-xl border border-strong px-4 py-3.5 outline-none focus:border-terracotta shadow-xs transition text-heading font-medium placeholder:text-muted"
             placeholder="Cari coffee shop atau kecamatan..."
           />
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -281,7 +281,7 @@ export default function CoffeeShopExplorer() {
             />
             <button
               onClick={reset}
-              className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-900 hover:bg-slate-100 transition shadow-2xs"
+              className="rounded-xl border border-strong bg-white px-4 py-3 text-sm font-bold text-heading hover:bg-info-soft transition shadow-xs"
             >
               Reset filter
             </button>
@@ -289,21 +289,21 @@ export default function CoffeeShopExplorer() {
         </div>
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-slate-800 font-medium flex items-center gap-2">
-            <b className="text-slate-950">{mode === "nearby" ? nearbyShops.length : sortedShops.length}</b> coffee shop ditemukan
+          <p className="text-sm text-body font-medium flex items-center gap-2">
+            <b className="text-heading">{mode === "nearby" ? nearbyShops.length : sortedShops.length}</b> coffee shop ditemukan
             {mode === "nearby" && (
-              <span className="font-mono text-xs text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-bold">
+              <span className="font-mono text-xs text-terracotta-strong bg-accent-soft px-2 py-0.5 rounded-full font-bold">
                 (diurutkan berdasarkan Rating &amp; Jarak)
               </span>
             )}
           </p>
           {mode === "all" && (
-            <label className="flex items-center gap-2 text-sm font-bold text-slate-950">
+            <label className="flex items-center gap-2 text-sm font-bold text-heading">
               Urutkan
               <select
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
-                className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 font-medium text-slate-950 shadow-2xs outline-none focus:border-indigo-600"
+                className="rounded-xl border border-strong bg-white px-3.5 py-2 font-medium text-heading shadow-xs outline-none focus:border-terracotta"
               >
                 <option value="newest">Featured &amp; terbaru</option>
                 <option value="rating">Rating tertinggi</option>
@@ -317,18 +317,18 @@ export default function CoffeeShopExplorer() {
             <>
               {nearbyLoading && (
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  <p className="col-span-full text-center text-slate-800 font-medium">Mencari coffee shop terdekat...</p>
+                  <p className="col-span-full text-center text-body font-medium">Mencari coffee shop terdekat...</p>
                   {[1, 2, 3].map((n) => (
                     <div key={n} className="h-80 rounded-2xl skeleton" />
                   ))}
                 </div>
               )}
-              {!nearbyLoading && nearbyError && <p className="text-center text-red-700 font-bold">{nearbyError}</p>}
+              {!nearbyLoading && nearbyError && <p className="text-center text-danger font-bold">{nearbyError}</p>}
               {!nearbyLoading && !nearbyError && nearbyShops.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-xs">
+                <div className="rounded-2xl border border-dashed border-strong bg-white px-6 py-16 text-center shadow-xs">
                   <p className="text-4xl">📍</p>
-                  <h2 className="mt-3 text-xl font-black text-slate-950">Tidak ada coffee shop terdekat</h2>
-                  <p className="mt-2 text-sm text-slate-800 font-medium">Coba pilih wilayah lain atau gunakan GPS.</p>
+                  <h2 className="mt-3 text-xl font-black text-heading">Tidak ada coffee shop terdekat</h2>
+                  <p className="mt-2 text-sm text-body font-medium">Coba pilih wilayah lain atau gunakan GPS.</p>
                 </div>
               )}
               {!nearbyLoading && !nearbyError && nearbyShops.length > 0 && (
@@ -343,13 +343,13 @@ export default function CoffeeShopExplorer() {
             <>
               {loading && (
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  <p className="col-span-full text-center text-slate-800 font-medium">Memuat coffee shop...</p>
+                  <p className="col-span-full text-center text-body font-medium">Memuat coffee shop...</p>
                   {[1, 2, 3, 4, 5, 6].map((n) => (
                     <div key={n} className="h-80 rounded-2xl skeleton" />
                   ))}
                 </div>
               )}
-              {!loading && error && <p className="text-center text-red-700 font-bold">{error}</p>}
+              {!loading && error && <p className="text-center text-danger font-bold">{error}</p>}
               {!loading && !error && sortedShops.length === 0 && <Empty reset={reset} />}
               {!loading && !error && sortedShops.length > 0 && (
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

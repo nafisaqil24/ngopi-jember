@@ -402,7 +402,7 @@ export default function OwnerDashboard() {
         </div>
 
         {loading && <p className="mt-12 text-center text-espresso/60">Memuat data coffee shop...</p>}
-        {!loading && error && <p className="mt-12 text-center text-red-600">{error}</p>}
+        {!loading && error && <p className="mt-12 text-center text-danger">{error}</p>}
 
         {!loading && !error && !shop && (
           <div className="mt-10 rounded-2xl bg-white p-8 shadow-sm ring-1 ring-espresso/10">
@@ -411,7 +411,7 @@ export default function OwnerDashboard() {
               Akun owner kamu belum memiliki coffee shop. Isi formulir di bawah ini untuk mendaftarkan coffee shop pertama kamu.
             </p>
 
-            {createShopError && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{createShopError}</p>}
+            {createShopError && <p className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger">{createShopError}</p>}
 
             <form onSubmit={handleCreateShop} className="mt-6 grid gap-4 sm:grid-cols-2">
               <div>
@@ -471,12 +471,12 @@ export default function OwnerDashboard() {
                   <button
                     type="button"
                     onClick={() => handleGetGPS(false)}
-                    className="rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-indigo-500 transition inline-flex items-center gap-1.5"
+                    className="rounded-xl bg-terracotta px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-terracotta-strong transition inline-flex items-center gap-1.5"
                   >
                     <span>📍 Gunakan GPS Saya</span>
                   </button>
                 </div>
-                <div className="mt-4 rounded-xl border border-espresso/15 bg-slate-50 p-4 space-y-3">
+                <div className="mt-4 rounded-xl border border-espresso/15 bg-info-soft p-4 space-y-3">
                   <h5 className="text-xs font-bold text-espresso/60 uppercase tracking-wider">Fasilitas Coffee Shop</h5>
                   <p className="text-xs text-espresso/50 mb-3">Pilih fasilitas yang ada di coffee shop kamu</p>
                   <div className="grid grid-cols-2 gap-2">
@@ -627,11 +627,11 @@ export default function OwnerDashboard() {
                       {shop.status === "OPEN" ? "Buka" : shop.status === "CLOSED" ? "Tutup" : "Tutup Sementara"}
                     </span>
                     {shop.isVerified ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-success-soft px-3 py-1 text-xs font-bold text-success border border-success/20">
                         ✓ Terverifikasi
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 border border-amber-200">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-3 py-1 text-xs font-bold text-warning border border-warning/30">
                         ⏳ Menunggu Verifikasi
                       </span>
                     )}
@@ -639,7 +639,7 @@ export default function OwnerDashboard() {
                   <h2 className="mt-3 text-2xl font-black">{shop.name}</h2>
                   <p className="mt-1 text-sm text-espresso/65">⌖ {shop.address} ({shop.district})</p>
                   {!shop.isVerified && (
-                    <p className="mt-1.5 text-xs text-amber-600 font-medium">
+                    <p className="mt-1.5 text-xs text-warning font-medium">
                       Toko kamu belum tampil di direktori publik sampai disetujui Admin.
                     </p>
                   )}
@@ -661,7 +661,7 @@ export default function OwnerDashboard() {
                     </button>
                     <button
                       onClick={handleDeleteShop}
-                      className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-100"
+                      className="rounded-xl border border-danger/30 bg-danger-soft px-3 py-2 text-xs font-bold text-danger hover:brightness-95"
                     >
                       Hapus Shop
                     </button>
@@ -689,7 +689,7 @@ export default function OwnerDashboard() {
               {isEditingShop && (
                 <form onSubmit={handleUpdateShop} className="mt-6 rounded-xl border border-espresso/15 bg-cream/30 p-5 space-y-4">
                   <h4 className="font-bold text-espresso">Edit Informasi Coffee Shop</h4>
-                  {editShopError && <p className="text-sm text-red-600">{editShopError}</p>}
+                  {editShopError && <p className="text-sm text-danger">{editShopError}</p>}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <label className="block text-xs font-bold text-espresso/70 mb-1">Nama Coffee Shop *</label>
@@ -745,7 +745,7 @@ export default function OwnerDashboard() {
                         <button
                           type="button"
                           onClick={() => handleGetGPS(true)}
-                          className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-indigo-500 transition inline-flex items-center gap-1.5"
+                          className="rounded-xl bg-terracotta px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-terracotta-strong transition inline-flex items-center gap-1.5"
                         >
                           <span>📍 Gunakan GPS Saya untuk Lokasi Baru</span>
                         </button>
@@ -884,7 +884,7 @@ export default function OwnerDashboard() {
                     </div>
                   )}
                   {analyticsError && (
-                    <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-center text-red-700">
+                    <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-center text-danger">
                       <p className="font-semibold">{analyticsError}</p>
                     </div>
                   )}
@@ -950,7 +950,7 @@ export default function OwnerDashboard() {
               {showAddMenu && (
                 <form onSubmit={handleAddMenu} className="mt-6 rounded-xl border border-espresso/15 bg-cream/30 p-5 space-y-4">
                   <h4 className="font-bold text-espresso">Tambah Menu Baru</h4>
-                  {formError && <p className="text-sm text-red-600">{formError}</p>}
+                  {formError && <p className="text-sm text-danger">{formError}</p>}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <label className="block text-xs font-bold text-espresso/70 mb-1">Nama Menu *</label>
@@ -1037,7 +1037,7 @@ export default function OwnerDashboard() {
                         {editingMenuId === item.id ? (
                           <form onSubmit={(e) => handleUpdateMenu(e, item.id)} className="space-y-3 bg-cream/20 p-4 rounded-xl border border-espresso/10">
                             <h5 className="font-bold text-espresso text-sm">Edit Menu</h5>
-                            {editMenuError && <p className="text-xs text-red-600">{editMenuError}</p>}
+                            {editMenuError && <p className="text-xs text-danger">{editMenuError}</p>}
                             <div className="grid gap-3 sm:grid-cols-2">
                               <input
                                 type="text"
@@ -1131,7 +1131,7 @@ export default function OwnerDashboard() {
                                 </button>
                                 <button
                                   onClick={() => handleDeleteMenu(item.id)}
-                                  className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700 hover:bg-red-100"
+                                  className="rounded-lg border border-danger/30 bg-danger-soft px-2.5 py-1 text-xs font-bold text-danger hover:brightness-95"
                                 >
                                   Hapus
                                 </button>

@@ -50,11 +50,11 @@ function Section({
       >
         <div className="mb-7 flex items-end justify-between">
           <div>
-            <h2 className="text-3xl font-black text-slate-950">{title}</h2>
-            <p className="mt-2 text-slate-800 font-medium">{subtitle}</p>
+            <h2 className="text-3xl font-black text-heading">{title}</h2>
+            <p className="mt-2 text-body font-medium">{subtitle}</p>
           </div>
           <Link
-            className="hidden font-mono text-xs font-bold text-indigo-700 hover:underline sm:block"
+            className="hidden font-mono text-xs font-bold text-terracotta-strong hover:underline sm:block"
             to="/coffee-shops"
           >
             Lihat semua →
@@ -70,11 +70,11 @@ function Section({
         )}
 
         {!loading && error && (
-          <p className="text-sm font-bold text-red-600">{error}</p>
+          <p className="text-sm font-bold text-danger">{error}</p>
         )}
 
         {!loading && !error && shops.length === 0 && (
-          <p className="text-sm text-slate-600 font-medium">Belum ada coffee shop dalam kategori ini.</p>
+          <p className="text-sm text-muted font-medium">Belum ada coffee shop dalam kategori ini.</p>
         )}
 
         {!loading && !error && shops.length > 0 && (
@@ -97,14 +97,14 @@ function CTA() {
         whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="relative overflow-hidden mx-5 mt-16 rounded-3xl bg-gradient-to-r from-indigo-600 to-indigo-800 px-6 py-12 text-center text-white sm:mx-auto sm:max-w-7xl shadow-xl"
+        className="relative overflow-hidden mx-5 mt-16 rounded-3xl bg-gradient-to-r from-terracotta to-terracotta-strong px-6 py-12 text-center text-white sm:mx-auto sm:max-w-7xl shadow-xl"
       >
         <motion.div
           className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-2xl pointer-events-none"
           animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
         />
-        <h2 className="text-3xl font-black">Sudah tahu mau ngopi di mana?</h2>
+        <h2 className="text-3xl font-black text-white">Sudah tahu mau ngopi di mana?</h2>
         <p className="mt-3 text-white/90">
           Jelajahi lebih banyak pilihan berdasarkan lokasi, harga, dan fasilitas.
         </p>
@@ -115,7 +115,7 @@ function CTA() {
         >
           <Link
             to="/coffee-shops"
-            className="group inline-flex items-center gap-2.5 rounded-xl bg-white px-7 py-4 font-bold text-indigo-900 shadow-xl hover:bg-slate-50 transition-all duration-300 ring-2 ring-white/50 hover:ring-white"
+            className="group inline-flex items-center gap-2.5 rounded-xl bg-white px-7 py-4 font-bold text-terracotta-strong shadow-xl hover:bg-cream transition-all duration-300 ring-2 ring-white/50 hover:ring-white"
           >
             <span>Jelajahi coffee shop</span>
             <motion.span
@@ -135,9 +135,9 @@ function CTA() {
         transition={{ duration: 0.5, delay: 0.2 }}
         className="mx-auto mt-16 max-w-7xl px-5 text-center"
       >
-        <p className="font-mono text-xs font-bold text-indigo-700 tracking-wider">UNTUK PEMILIK KEDAI</p>
-        <h2 className="mt-2 text-3xl font-black text-slate-950">Punya coffee shop di Jember?</h2>
-        <p className="mt-3 text-slate-800 font-medium">
+        <p className="font-mono text-xs font-bold text-terracotta-strong tracking-wider">UNTUK PEMILIK KEDAI</p>
+        <h2 className="mt-2 text-3xl font-black text-heading">Punya coffee shop di Jember?</h2>
+        <p className="mt-3 text-body font-medium">
           Bantu lebih banyak orang menemukan kedaimu dan ceritakan keunikan kopimu.
         </p>
         <motion.div
@@ -147,7 +147,7 @@ function CTA() {
         >
           <Link
             to="/register"
-            className="group inline-flex items-center gap-2.5 rounded-xl border-2 border-indigo-600 bg-indigo-50/50 px-7 py-4 font-bold text-indigo-950 shadow-sm hover:bg-indigo-600 hover:text-white transition-all duration-300"
+            className="group inline-flex items-center gap-2.5 rounded-xl border-2 border-terracotta bg-accent-soft/60 px-7 py-4 font-bold text-terracotta-strong shadow-sm hover:bg-terracotta hover:text-white transition-all duration-300"
           >
             <motion.span
               className="inline-block"
@@ -157,7 +157,7 @@ function CTA() {
               ☕
             </motion.span>
             <span>Daftarkan coffee shop</span>
-            <span className="text-indigo-600 group-hover:text-white transition-colors">✨</span>
+            <span className="text-terracotta group-hover:text-white transition-colors">✨</span>
           </Link>
         </motion.div>
       </motion.section>
@@ -214,29 +214,29 @@ export default function Home() {
         transition={{ duration: 0.5 }}
         className="relative overflow-hidden px-5 py-20 text-center sm:py-28"
       >
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,#efd3bd,transparent_45%)]" />
-        <p className="font-mono text-xs font-semibold tracking-widest text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-500/20 inline-block mb-3 shadow-2xs">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,#f6ddc9,transparent_45%)]" />
+        <p className="font-mono text-xs font-semibold tracking-widest text-terracotta-strong bg-accent-soft px-3 py-1.5 rounded-lg border border-terracotta/20 inline-block mb-3 shadow-xs">
           SYSTEM // COFFEE DIRECTORY & CURATION
         </p>
-        <h1 className="mx-auto mt-4 max-w-4xl text-4xl font-black leading-tight text-slate-950 sm:text-6xl">
+        <h1 className="mx-auto mt-4 max-w-4xl text-4xl font-black leading-tight text-heading sm:text-6xl">
           Temukan Tempat Ngopi Favoritmu di Jember
         </h1>
-        <p className="mx-auto mt-5 max-w-2xl leading-7 text-slate-900 font-medium">
+        <p className="mx-auto mt-5 max-w-2xl leading-7 text-body font-medium">
           Dari sudut tenang untuk bekerja hingga tempat seru untuk berbagi
           cerita—temukan kedai yang cocok untuk harimu.
         </p>
         <form
           onSubmit={handleSearch}
-          className="mx-auto mt-8 flex max-w-2xl rounded-2xl bg-white p-2 shadow-xl ring-1 ring-slate-300"
+          className="mx-auto mt-8 flex max-w-2xl rounded-2xl bg-white p-2 shadow-lg ring-1 ring-subtle"
         >
           <input
             aria-label="Cari coffee shop"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className="min-w-0 flex-1 bg-transparent px-4 outline-none font-sans text-slate-950 placeholder:text-slate-500 font-medium"
+            className="min-w-0 flex-1 bg-transparent px-4 outline-none font-sans text-heading placeholder:text-muted font-medium"
             placeholder="Cari coffee shop atau kecamatan..."
           />
-          <button className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-indigo-500 transition">
+          <button className="rounded-xl bg-terracotta px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-terracotta-strong transition">
             Cari
           </button>
         </form>

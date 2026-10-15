@@ -32,7 +32,7 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="mt-9"
     >
-      <h2 className="mb-4 text-xl font-black text-slate-950">{title}</h2>
+      <h2 className="mb-4 text-xl font-black text-heading">{title}</h2>
       {children}
     </motion.section>
   );
@@ -157,7 +157,7 @@ export default function CoffeeShopDetail() {
       >
         <Link
           to="/coffee-shops"
-          className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50/60 px-4 py-2 text-sm font-semibold text-indigo-600 transition-all duration-200 hover:bg-indigo-600 hover:text-white hover:scale-105 active:scale-95 shadow-xs"
+          className="inline-flex items-center gap-2 rounded-xl border border-terracotta/30 bg-accent-soft px-4 py-2 text-sm font-semibold text-terracotta-strong transition-all duration-200 hover:bg-terracotta hover:text-white hover:scale-105 active:scale-95 shadow-xs"
         >
           Kembali menjelajah
         </Link>
@@ -181,30 +181,30 @@ export default function CoffeeShopDetail() {
               <div>
                 <div className="flex gap-2">
                   {shop.isFeatured && (
-                    <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-bold text-white shadow-md uppercase tracking-wider font-mono">
+                    <span className="rounded-full bg-terracotta px-3 py-1 text-xs font-bold text-white shadow-md uppercase tracking-wider font-mono">
                       Featured
                     </span>
                   )}
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-bold ${
                       shop.status === "OPEN"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
+                        ? "bg-success-soft text-success"
+                        : "bg-danger-soft text-danger"
                     }`}
                   >
                     {shop.status === "OPEN" ? "Buka sekarang" : "Tutup"}
                   </span>
                 </div>
-                <h1 className="mt-3 text-4xl font-black text-slate-950">{shop.name}</h1>
-                <p className="mt-2 text-slate-800 font-medium">⌖ {shop.address}</p>
+                <h1 className="mt-3 text-4xl font-black text-heading">{shop.name}</h1>
+                <p className="mt-2 text-body font-medium">⌖ {shop.address}</p>
               </div>
-              <div className="rounded-xl bg-white px-4 py-3 text-right shadow-sm ring-1 ring-slate-200">
-                <b className="text-xl text-indigo-600">★ {rating.toFixed(1)}</b>
-                <p className="text-xs text-slate-800 font-medium">{shop.reviewCount} ulasan</p>
+              <div className="rounded-xl bg-white px-4 py-3 text-right shadow-sm ring-1 ring-subtle">
+                <b className="text-xl text-terracotta">★ {rating.toFixed(1)}</b>
+                <p className="text-xs text-body font-medium">{shop.reviewCount} ulasan</p>
               </div>
             </div>
 
-            <p className="mt-7 leading-8 text-slate-900 font-medium">{shop.description}</p>
+            <p className="mt-7 leading-8 text-body font-medium">{shop.description}</p>
 
             <Block title="Fasilitas">
               <div className="flex flex-wrap gap-2">
@@ -217,9 +217,9 @@ export default function CoffeeShopDetail() {
                       whileInView={{ opacity: 1, scale: 1 }}
                       viewport={{ once: true }}
                       transition={{ delay: index * 0.05 }}
-                      className="rounded-lg bg-white px-3.5 py-2 text-sm shadow-sm ring-1 ring-slate-200 font-medium text-slate-900 inline-flex items-center gap-1.5"
+                      className="rounded-lg bg-surface px-3.5 py-2 text-sm shadow-sm ring-1 ring-subtle font-medium text-body inline-flex items-center gap-1.5"
                     >
-                      <span className="text-indigo-600 font-bold">✓</span> {fac.name}
+                      <span className="text-terracotta font-bold">✓</span> {fac.name}
                     </motion.span>
                   );
                 })}
@@ -228,9 +228,9 @@ export default function CoffeeShopDetail() {
 
              <Block title="Menu favorit">
               {shop.menus.length === 0 ? (
-                <p className="text-sm text-slate-800 font-medium">Menu belum tersedia.</p>
+                <p className="text-sm text-muted font-medium">Menu belum tersedia.</p>
               ) : (
-                <div className="divide-y divide-slate-200 rounded-2xl bg-white px-5 shadow-sm ring-1 ring-slate-200">
+                <div className="divide-y divide-subtle rounded-2xl bg-white px-5 shadow-sm ring-1 ring-subtle">
                   {shop.menus.map((item, index) => (
                     <motion.div
                       key={item.id}
@@ -250,19 +250,19 @@ export default function CoffeeShopDetail() {
                         )}
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <b className="text-slate-950">{item.name}</b>
+                            <b className="text-heading">{item.name}</b>
                             {item.category && (
-                              <span className="rounded-md bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-700">
+                              <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-bold text-terracotta-strong">
                                 {item.category}
                               </span>
                             )}
                           </div>
                           {item.description && (
-                            <p className="text-xs text-slate-800 font-medium">{item.description}</p>
+                            <p className="text-xs text-muted font-medium">{item.description}</p>
                           )}
                         </div>
                       </div>
-                      <div className="font-bold text-indigo-600 shrink-0">
+                      <div className="font-bold text-terracotta shrink-0">
                         Rp{item.price.toLocaleString("id-ID")}
                       </div>
                     </motion.div>
@@ -274,21 +274,21 @@ export default function CoffeeShopDetail() {
             <Block title={`Ulasan & Rating (${shop.reviews.length})`}>
               <div className="space-y-6">
                 {user ? (
-                  <form onSubmit={handleReviewSubmit} className={`rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-300 space-y-4 ${isShaking ? "animate-shake" : ""}`}>
-                    <h3 className="font-black text-lg text-slate-950">Tulis Ulasan Kamu</h3>
-                    {reviewError && <p className="text-sm text-red-600 font-bold">{reviewError}</p>}
+                  <form onSubmit={handleReviewSubmit} className={`rounded-2xl bg-white p-6 shadow-sm ring-1 ring-subtle space-y-4 ${isShaking ? "animate-shake" : ""}`}>
+                    <h3 className="font-black text-lg text-heading">Tulis Ulasan Kamu</h3>
+                    {reviewError && <p className="text-sm text-danger font-bold">{reviewError}</p>}
                     {reviewSuccess && (
-                      <div className="flex items-center gap-2 text-sm text-green-700 font-bold animate-in fade-in duration-200">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-green-700 text-xs">✓</span>
+                      <div className="flex items-center gap-2 text-sm text-success font-bold animate-in fade-in duration-200">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success-soft text-success text-xs">✓</span>
                         {reviewSuccess}
                       </div>
                     )}
                     <div>
-                      <label className="block text-xs font-bold text-slate-900 mb-1">Rating Bintang *</label>
+                      <label className="block text-xs font-bold text-heading mb-1.5">Rating Bintang *</label>
                       <select
                         value={reviewRating}
                         onChange={(e) => setReviewRating(Number(e.target.value))}
-                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-600 font-medium text-slate-950"
+                        className="w-full rounded-xl border border-strong bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta font-medium text-heading"
                       >
                         <option value="5">★★★★★ (5 - Sangat Baik)</option>
                         <option value="4">★★★★☆ (4 - Baik)</option>
@@ -298,32 +298,32 @@ export default function CoffeeShopDetail() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-900 mb-1">Komentar * (min 3 karakter)</label>
+                      <label className="block text-xs font-bold text-heading mb-1.5">Komentar * (min 3 karakter)</label>
                       <textarea
                         required
                         rows={3}
                         value={reviewComment}
                         onChange={(e) => setReviewComment(e.target.value)}
                         placeholder="Bagikan pengalamanmu ngopi di sini..."
-                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-600 font-medium text-slate-950 placeholder:text-slate-500"
+                        className="w-full rounded-xl border border-strong bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta font-medium text-heading placeholder:text-muted"
                       />
                     </div>
                     <button
                       type="submit"
                       disabled={submittingReview}
-                      className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-500 hover:scale-105 active:scale-95 disabled:opacity-50 transition"
+                      className="rounded-xl bg-terracotta px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-terracotta-strong hover:scale-105 active:scale-95 disabled:opacity-50 transition"
                     >
                       {submittingReview ? "Mengirim..." : "Kirim Ulasan"}
                     </button>
                   </form>
                 ) : (
-                  <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-300 text-center text-sm text-slate-950 font-medium">
-                    Silakan <Link to="/login" className="font-bold text-indigo-600 underline">login</Link> terlebih dahulu untuk menulis ulasan.
+                  <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-subtle text-center text-sm text-body font-medium">
+                    Silakan <Link to="/login" className="font-bold text-terracotta underline">login</Link> terlebih dahulu untuk menulis ulasan.
                   </div>
                 )}
 
                 {shop.reviews.length === 0 ? (
-                  <p className="text-sm text-slate-800 font-medium">Belum ada ulasan untuk coffee shop ini.</p>
+                  <p className="text-sm text-muted font-medium">Belum ada ulasan untuk coffee shop ini.</p>
                 ) : (
                   <div className="space-y-4">
                     {shop.reviews.map((review, index) => (
@@ -333,15 +333,15 @@ export default function CoffeeShopDetail() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: index * 0.05 }}
-                        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-300 space-y-2"
+                        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-subtle space-y-2"
                       >
                         <div className="flex items-center justify-between">
-                          <b className="text-slate-950">{review.user.name}</b>
-                          <span className="text-indigo-600 font-bold text-sm">
+                          <b className="text-heading">{review.user.name}</b>
+                          <span className="text-terracotta font-bold text-sm">
                             {"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
                           </span>
                         </div>
-                        <p className="text-sm text-slate-900 font-medium leading-relaxed">{review.comment}</p>
+                        <p className="text-sm text-body font-medium leading-relaxed">{review.comment}</p>
                       </motion.div>
                     ))}
                   </div>
@@ -350,16 +350,16 @@ export default function CoffeeShopDetail() {
             </Block>
           </section>
 
-          <aside className="h-fit rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-300 sticky top-24">
-            <h2 className="text-lg font-black text-slate-950">Informasi lokasi</h2>
+          <aside className="h-fit rounded-2xl bg-white p-6 shadow-sm ring-1 ring-subtle sticky top-24">
+            <h2 className="text-lg font-black text-heading">Informasi lokasi</h2>
             <dl className="mt-5 grid gap-4 text-sm">
               <div>
-                <dt className="text-slate-800 font-medium">Jam operasional</dt>
-                <dd className="mt-1 font-bold text-slate-950">{shop.openingHours}</dd>
+                <dt className="text-muted font-medium">Jam operasional</dt>
+                <dd className="mt-1 font-bold text-heading">{shop.openingHours}</dd>
               </div>
               <div>
-                <dt className="text-slate-800 font-medium">Kisaran harga</dt>
-                <dd className="mt-1 font-bold text-slate-950">{shop.priceRange}</dd>
+                <dt className="text-muted font-medium">Kisaran harga</dt>
+                <dd className="mt-1 font-bold text-heading">{shop.priceRange}</dd>
               </div>
             </dl>
             <div className="mt-6 grid gap-3">
@@ -380,7 +380,7 @@ export default function CoffeeShopDetail() {
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => trackEvent(shop.id, "INSTAGRAM_CLICK")}
-                  className="rounded-xl border border-slate-300 py-3 text-center text-sm font-bold text-slate-900 hover:bg-slate-100 hover:scale-105 active:scale-95 transition shadow-2xs"
+                  className="rounded-xl border border-strong py-3 text-center text-sm font-bold text-heading hover:bg-info-soft hover:scale-105 active:scale-95 transition shadow-xs"
                 >
                   Instagram
                 </a>
@@ -390,7 +390,7 @@ export default function CoffeeShopDetail() {
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => trackEvent(shop.id, "MAP_CLICK")}
-                className="rounded-xl border border-slate-300 py-3 text-center text-sm font-bold text-slate-900 hover:bg-slate-100 hover:scale-105 active:scale-95 transition shadow-2xs"
+                className="rounded-xl border border-strong py-3 text-center text-sm font-bold text-heading hover:bg-info-soft hover:scale-105 active:scale-95 transition shadow-xs"
               >
                 Buka Google Maps
               </a>

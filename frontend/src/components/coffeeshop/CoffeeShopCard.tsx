@@ -18,9 +18,9 @@ export default function CoffeeShopCard({ coffeeShop, index = 0 }: CoffeeShopCard
     >
       <Link
         to={`/coffee-shops/${coffeeShop.slug}`}
-        className="card-elevation group flex flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white transition-all duration-300 hover:border-indigo-600 h-full"
+        className="card-elevation group flex flex-col overflow-hidden rounded-2xl border border-subtle bg-white transition-all duration-300 hover:border-terracotta h-full"
       >
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-info-soft">
           <img
             src={coffeeShop.imageUrl}
             alt={coffeeShop.name}
@@ -28,7 +28,7 @@ export default function CoffeeShopCard({ coffeeShop, index = 0 }: CoffeeShopCard
             className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
           />
           {coffeeShop.isFeatured && (
-            <span className="absolute left-3 top-3 rounded-lg bg-indigo-600 px-3 py-1 font-mono text-[11px] font-bold text-white shadow-md tracking-wider uppercase">
+            <span className="absolute left-3 top-3 rounded-full bg-terracotta px-3 py-1 font-mono text-[11px] font-bold text-white shadow-md tracking-wider uppercase">
               Featured
             </span>
           )}
@@ -36,26 +36,26 @@ export default function CoffeeShopCard({ coffeeShop, index = 0 }: CoffeeShopCard
 
         <div className="flex flex-1 flex-col gap-2 p-4">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold text-slate-900">
+            <h3 className="font-semibold text-heading">
               {coffeeShop.name}
             </h3>
-            <div className="flex shrink-0 items-center gap-1 text-sm font-semibold text-slate-900">
-              <span aria-hidden>★</span>
+            <div className="flex shrink-0 items-center gap-1 text-sm font-semibold text-heading">
+              <span aria-hidden className="text-terracotta">★</span>
               {coffeeShop.rating.toFixed(1)}
-              <span className="text-slate-700">({coffeeShop.reviewCount})</span>
+              <span className="text-muted">({coffeeShop.reviewCount})</span>
             </div>
           </div>
 
           <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-slate-700">{coffeeShop.district}</span>
+            <span className="font-medium text-body">{coffeeShop.district}</span>
             {coffeeShop.distance !== undefined && (
-              <span className="font-mono text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-500/20">
+              <span className="font-mono text-xs font-bold text-terracotta-strong bg-accent-soft px-2.5 py-1 rounded-full border border-terracotta/20">
                 📍 {coffeeShop.distance} km
               </span>
             )}
           </div>
 
-          <p className="text-sm font-semibold text-slate-900">
+          <p className="text-sm font-semibold text-heading">
             {coffeeShop.priceRange}
           </p>
 
@@ -63,14 +63,14 @@ export default function CoffeeShopCard({ coffeeShop, index = 0 }: CoffeeShopCard
             {coffeeShop.facilities.slice(0, 3).map((facility) => (
               <span
                 key={facility}
-                className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-800"
+                className="rounded-full bg-info-soft px-2.5 py-1 text-xs font-semibold text-body"
               >
                 {facility}
               </span>
             ))}
           </div>
 
-          <span className="mt-auto pt-2 font-mono text-xs font-bold text-indigo-600 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+          <span className="mt-auto pt-2 font-mono text-xs font-bold text-terracotta group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
             Lihat Detail →
           </span>
         </div>

@@ -27,14 +27,14 @@ export default class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <MainLayout>
-          <div className="mx-auto my-20 max-w-md rounded-2xl bg-red-50 p-8 text-center ring-1 ring-red-200">
-            <h2 className="text-xl font-black text-red-900">Wah, halaman mengalami kendala.</h2>
-            <p className="mt-3 text-sm text-red-700 leading-relaxed">
+          <div className="mx-auto my-20 max-w-md rounded-2xl bg-danger-soft p-8 text-center ring-1 ring-danger/30">
+            <h2 className="text-xl font-black text-danger">Wah, halaman mengalami kendala.</h2>
+            <p className="mt-3 text-sm text-danger/90 leading-relaxed">
               Terjadi kesalahan tak terduga pada aplikasi. Silakan muat ulang halaman ini.
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-6 rounded-xl bg-terracotta px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-terracotta/90 transition"
+              className="mt-6 rounded-xl bg-terracotta px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-terracotta-strong transition"
             >
               Muat Ulang Halaman
             </button>
