@@ -565,4 +565,347 @@ npm run prisma:update-shops -- --apply # terapkan
 
 ---
 
-*Last updated: 2026-10-14 WIB*
+## 2026-10-15 - Perbaikan Resolusi Path frontend/dist & Fallback SPA
+
+**Aktivitas:** Memperbaiki resolusi path `frontend/dist` yang sebelumnya memakai `process.cwd()` (gagal bila server dijalankan dari root repo) dan memperketat fallback SPA.
+
+### Masalah
+`path.join(process.cwd(), '../frontend/dist')` menunjuk ke `<root>/frontend/dist` hanya bila cwd = `backend/`. Saat dijalankan `node backend/dist/server.js` dari root, cwd = root → path salah → frontend tidak disajikan.
+
+### Perubahan (`backend/src/app.ts`)
+1. Path dihitung relatif lokasi file terkompilasi: `path.resolve(__dirname, '../../frontend/dist')` (dari `backend/dist/app.js` → `<root>/frontend/dist`). CJS, jadi `__dirname` tersedia. Override opsional via env `FRONTEND_DIST_PATH`.
+2. Saat start, cek folder **dan** `index.html`; bila tidak ada → `console.warn` jelas via `stderr`, tanpa crash. (Diuji: warning muncul, server tetap jalan.)
+3. Fallback SPA hanya untuk `GET`, bukan `/api/*`, dan path tanpa ekstensi file (`path.extname`). Request file statis yang tidak ada → 404, bukan `index.html`.
+4. Route 404 JSON `/api/*` tidak dikenal dipindah keluar dari blok `if (hasFrontend)` agar konsisten walau frontend belum di-build.
+
+### Test (`backend/src/spa-fallback.test.ts` — baru)
+- RED dulu: `/assets/tidak-ada.js` awalnya 200 (index.html) → gagal sesuai harapan.
+- 3 test: `/coffee-shops/abc` → 200 HTML; `/api/tidak-ada` → 404 JSON; `/assets/tidak-ada.js` → 404 non-HTML.
+- Test lama (`app.test.ts`, dll.) tidak dilonggarkan.
+
+### Verifikasi
+- `npm run check` (backend): ✅ exit 0.
+- `npm run build` (backend) + `npm run build` (root): ✅ sukses (frontend + backend).
+- `npm test` (backend): ✅ **24/24 passed** (6 files). Host test `[test-env]`: `ep-xxxx-pooler.c-3.ap-southeast-1.aws.neon.tech` (bukan DB utama). Catatan: `analytics.test.ts` sempat flaky 1x (lolos saat diisolasi & saat rerun full) — tidak terkait perubahan ini.
+- Smoke test subprocess (env `.env.test`, Cloudinary dummy, `PORT=4100`, `NODE_ENV=production`, **tanpa** `FRONTEND_DIST_PATH`), path frontend/dist terpakai: `D:\projects\ngopi-jember\frontend\dist` untuk KEDUA cara start:
+
+| Cara start | GET / | GET /assets/<js> | GET /assets/tidak-ada.js | GET /coffee-shops/abc | GET /api/tidak-ada |
+|---|---|---|---|---|---|
+| root: `node backend/dist/server.js` | 200 HTML | 200 text/javascript | 404 JSON | 200 HTML | 404 JSON |
+| backend: `node dist/server.js` | 200 HTML | 200 text/javascript | 404 JSON | 200 HTML | 404 JSON |
+
+---
+
+## 2026-10-15 - Catatan Lengkap Sesi: Resolusi Path frontend/dist & Fallback SPA
+
+> Bagian ini adalah catatan detail & lengkap dari sesi terakhir. Tujuannya agar siapa pun yang melanjutkan project dapat mereproduksi seluruh langkah tanpa menebak.
+
+### 1. Konteks & Instruksi Tugas
+- **Tujuan:** Perbaiki resolusi path `frontend/dist` dan fallback SPA di backend.
+- **Batasan wajib (dari user/AGENTS.md):**
+  - JANGAN commit.
+  - JANGAN sentuh DB (tidak ada migrasi/seed/reset/cleanup).
+  - JANGAN sentuh `backend/.env` (tidak boleh edit file `.env*`).
+  - Jangan tampilkan password/token/connection string utuh — hanya host/nama DB yang boleh, dan itu pun disamarkan bila perlu.
+
+### 2. Kondisi Repo Saat Mulai (temuan awal)
+- Branch: `main` — **tidak ada branch baru dibuat**.
+- Sudah ada perubahan **uncommitted** di area yang sama sebelum sesi ini (`git status --short` awal):
+  ```
+   M README.md
+   M backend/package.json
+   M backend/src/app.test.ts
+   M backend/src/app.ts
+   M backend/src/middleware/upload.ts
+   M backend/src/server.ts
+   M frontend/src/services/coffeeShop.ts
+   M package.json
+  ```
+- `backend/.env` ✅ ada, `backend/.env.test` ✅ ada (host test `ep-xxxx-pooler...`, berbeda dari DB utama).
+- `frontend/dist` ✅ sudah ada, berisi `index.html` + `assets/index-BeIcum_h.js` + `assets/index-CFcvbms2.css`.
+- Backend adalah **CommonJS** (`package.json` `"type": "commonjs"`, `tsconfig` `module`/`moduleResolution` = `NodeNext`), sehingga `__dirname` tersedia dan import memakai suffix `.js`.
+
+### 3. Skill yang Dipakai
+- `test-driven-development`: test ditulis lebih dulu (RED), diverifikasi gagal karena alasan benar, baru implementasi (GREEN).
+
+### 4. Masalah yang Diperbaiki (detail teknis)
+Kode lama:
+```ts
+const frontendDist = path.join(process.cwd(), '../frontend/dist')
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist))
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ success: false, message: 'Endpoint tidak ditemukan' })
+    }
+    res.sendFile(path.join(frontendDist, 'index.html'), (err) => { if (err) next(err) })
+  })
+}
+```
+Kelemahan:
+1. `process.cwd()` benar hanya jika server dijalankan dari `backend/`. Jika `node backend/dist/server.js` dari root, path salah → frontend tidak disajikan.
+2. Fallback SPA menangkap **semua** request non-`/api` termasuk asset statis yang tidak ada → `index.html` dikembalikan dengan status 200 (bug: `GET /assets/tidak-ada.js` → 200 HTML).
+3. Jika `frontend/dist` tidak ada, blok dilewati tanpa peringatan; 404 `/api` juga tidak konsisten.
+
+### 5. Perubahan Kode Final (`backend/src/app.ts`)
+Setelah `app.use('/api', referenceRouter)`:
+```ts
+// 404 JSON untuk endpoint API yang tidak dikenal (konsisten walau frontend belum di-build)
+app.use('/api', (_req, res) => {
+  return res.status(404).json({ success: false, message: 'Endpoint tidak ditemukan' })
+})
+
+// Static frontend (SPA) — dipakai di production setelah build.
+// Path dihitung relatif terhadap lokasi file terkompilasi (dist/app.js -> <root>/frontend/dist),
+// sehingga tetap benar walau server dijalankan dari root repo.
+const frontendDist = process.env.FRONTEND_DIST_PATH
+  ? path.resolve(process.env.FRONTEND_DIST_PATH)
+  : path.resolve(__dirname, '../../frontend/dist')
+const frontendIndex = path.join(frontendDist, 'index.html')
+const hasFrontend = fs.existsSync(frontendDist) && fs.existsSync(frontendIndex)
+
+if (hasFrontend) {
+  app.use(express.static(frontendDist))
+
+  // Fallback SPA hanya untuk GET, bukan /api/*, dan path tanpa ekstensi file.
+  // Request file statis yang tidak ada akan jatuh ke 404, bukan index.html.
+  app.get(/^(?!\/api(?:\/|$)).*/, (req, res, next) => {
+    if (path.extname(req.path)) return next()
+    res.sendFile(frontendIndex, (err) => {
+      if (err) next(err)
+    })
+  })
+} else {
+  console.warn(
+    `[frontend] Peringatan: frontend tidak disajikan - folder build tidak ditemukan di "${frontendDist}" ` +
+    `(atau index.html tidak ada). Jalankan build frontend atau set FRONTEND_DIST_PATH.`,
+  )
+}
+```
+Poin penting:
+- `path.resolve(__dirname, '../../frontend/dist')`: `__dirname` = `backend/dist` saat runtime → naik dua tingkat → `<root>/frontend/dist`. Saat unit test (`src/app.ts` via Vitest) `__dirname` = `backend/src` → juga naik dua tingkat → benar.
+- `FRONTEND_DIST_PATH` opsional sebagai override.
+- Peringatan memakai tanda hubung biasa `-` (bukan em dash `—`) agar aman di console Windows (encoding CP1252 menyebabkan mojibake `â€"`).
+- Fallback pakai `path.extname(req.path)` — hanya path **tanpa** ekstensi yang di-serve `index.html` (mis. `.js`, `.css`, `.png`, `.map` → jatuh ke `notFoundHandler` → 404).
+
+### 6. Test Baru (TDD)
+File baru: `backend/src/spa-fallback.test.ts`
+```ts
+import { describe, it, expect } from 'vitest'
+import request from 'supertest'
+import { app } from './app.js'
+
+describe('SPA fallback (frontend/dist)', () => {
+  it('GET /coffee-shops/abc mengembalikan HTML (fallback SPA)', async () => {
+    const res = await request(app).get('/coffee-shops/abc')
+    expect(res.status).toBe(200)
+    expect(res.headers['content-type']).toMatch(/text\/html/)
+    expect(res.text).toContain('<!doctype html>')
+  })
+
+  it('GET /api/tidak-ada mengembalikan 404 JSON', async () => {
+    const res = await request(app).get('/api/tidak-ada')
+    expect(res.status).toBe(404)
+    expect(res.headers['content-type']).toMatch(/application\/json/)
+    expect(res.body).toEqual({ success: false, message: 'Endpoint tidak ditemukan' })
+  })
+
+  it('GET /assets/tidak-ada.js mengembalikan 404, bukan index.html', async () => {
+    const res = await request(app).get('/assets/tidak-ada.js')
+    expect(res.status).toBe(404)
+    expect(res.headers['content-type']).not.toMatch(/text\/html/)
+  })
+})
+```
+Bukti RED (sebelum implementasi):
+```
+ × GET /assets/tidak-ada.js mengembalikan 404, bukan index.html
+   AssertionError: expected 200 to be 404
+```
+Bukti GREEN (setelah implementasi): `Test Files 2 passed (2) / Tests 6 passed (6)` untuk `spa-fallback` + `app`.
+
+### 7. File yang Berubah / Dibuat di Sesi Ini
+| File | Status | Keterangan |
+|------|--------|-----------|
+| `backend/src/app.ts` | Diubah | Resolusi path via `__dirname` + `FRONTEND_DIST_PATH`, warning, fallback GET-only/non-ekstensi, 404 `/api` konsisten |
+| `backend/src/spa-fallback.test.ts` | **Baru** | 3 test SPA fallback (TDD) |
+| `progres.md` | Diubah | Catatan sesi ini |
+
+Catatan: file lain yang muncul di `git status` (`README.md`, `backend/package.json`, `backend/src/app.test.ts`, `backend/src/middleware/upload.ts`, `backend/src/server.ts`, `frontend/src/services/coffeeShop.ts`, `package.json`) sudah **dimodifikasi sebelum sesi ini**; tidak diubah lagi kecuali `app.test.ts` yang memang sudah selaras.
+
+### 8. Verifikasi Lengkap
+- `npm run check` (backend, `tsc --noEmit`): ✅ EXIT 0.
+- `npm run build` (backend, `prisma generate && tsc`): ✅ EXIT 0.
+- `npm run build` (root, `build:frontend && build:backend`): ✅ sukses. Output frontend:
+  ```
+  dist/index.html                   1.20 kB
+  dist/assets/index-CFcvbms2.css   50.88 kB
+  dist/assets/index-BeIcum_h.js   455.96 kB
+  ✓ built in 1.37s
+  ```
+- `npm test` (backend): ✅ **24/24 passed** (6 files).
+  - `[test-env] DB host: ep-xxxx-pooler.c-3.ap-southeast-1.aws.neon.tech` (pooled; bukan DB utama).
+  - Catatan flaky: `analytics.test.ts` > "hanya menghitung kedai milik owner" sempat gagal 1x (di run setelah edit komentar) dengan `expected 0 to be greater than or equal to 1`; lolos saat diisolasi dan pada rerun full suite. Tidak terkait perubahan path/fallback.
+- Verifikasi warning "frontend tidak ada" (subprocess, `FRONTEND_DIST_PATH` diarahkan ke folder tak ada): server tetap start dan mencetak ke **stderr**:
+  ```
+  [frontend] Peringatan: frontend tidak disajikan - folder build tidak ditemukan di "...\frontend\dist-TIDAK-ADA" (atau index.html tidak ada). Jalankan build frontend atau set FRONTEND_DIST_PATH.
+  ```
+- Smoke test subprocess (env dari `.env.test`, Cloudinary dummy, `PORT=4100`, `NODE_ENV=production`, **tanpa** `FRONTEND_DIST_PATH` sehingga benar-benar menguji resolusi `__dirname`), path terpakai: `D:\projects\ngopi-jember\frontend\dist`.
+
+| Cara start (cwd) | GET / | GET /assets/index-BeIcum_h.js | GET /assets/tidak-ada.js | GET /coffee-shops/abc | GET /api/tidak-ada |
+|---|---|---|---|---|---|
+| root: `node backend/dist/server.js` | 200 text/html | 200 text/javascript | 404 application/json | 200 text/html | 404 application/json |
+| backend: `node dist/server.js` | 200 text/html | 200 text/javascript | 404 application/json | 200 text/html | 404 application/json |
+
+### 9. Aturan Operasional yang Tetap Dipatuhi
+- ✅ Tidak ada commit (`git status` menunjukkan semua masih `M`/`??`).
+- ✅ Tidak menyentuh DB (tidak `migrate`/`seed`/`reset`/`cleanup`).
+- ✅ Tidak mengedit file `.env*`.
+- ✅ Tidak menampilkan password/connection string utuh (hanya host DB test).
+
+### 10. `git status --short` Akhir Sesi
+```
+ M README.md
+ M backend/package.json
+ M backend/src/app.test.ts
+ M backend/src/app.ts
+ M backend/src/middleware/upload.ts
+ M backend/src/server.ts
+ M frontend/src/services/coffeeShop.ts
+ M package.json
+ M progres.md
+?? backend/src/spa-fallback.test.ts
+```
+
+### 11. Langkah Lanjutan (belum dikerjakan / kandidat)
+- [ ] Commit perubahan sesi ini (belum, sesuai instruksi) — pastikan `.env*` tetap ter-ignore.
+- [ ] Pertimbangkan env `FRONTEND_DIST_PATH` didokumentasikan di README pada seksi single-service deployment.
+- [ ] Selidiki flakiness `analytics.test.ts` (kemungkinan timing/event dari run sebelumnya) secara terpisah.
+- [ ] Kandidat lama yang masih relevan: hapus `backend/check-data.ts` (skrip debug), samakan versi Prisma root vs backend, tinjau `.superpowers/`.
+
+---
+
+## 2026-10-15 - Verifikasi dan Smoke Test Sesi Akhir
+
+> **Waktu selesai:** 15 oktober 2026 pukul 21.33 WIB
+
+> **Tugas yangdiselesaikan dalam sesi ini:**
+> - Mendefinisikan cakupan Fase C (CRUD + analytics) dengan persetujuan user melalui pertanyaan satu per satu.
+> - Memetakan 24 test backend (6 file) dan memverifikasi `npm test` lulus 24/24.
+> - Menjalankan verifikasi `npm run check` (tsc --noEmit): ✅ exit 0.
+> - Mem-build backend (`prisma generate && tsc`) dan root (`build:frontend && build:backend`): ✅ sukses.
+> - Menjalankan smoke test subprocess (env dari `.env.test`, Cloudinary dummy, `PORT=4100`, `NODE_ENV=production`, **tanpa** `FRONTEND_DIST_PATH`), memverifikasi path frontend/dist yang diterima keduanya:
+>   - Dari root (`node backend/dist/server.js`): path terpakai `D:\projects\ngopi-jember\frontend\dist`.
+>   - Dari backend (`node dist/server.js`): path terpakai `D:\projects\ngopi-jember\frontend\dist`.
+>   - Hasil uji utama (semua PORT=4100):
+>     | GET / | GET /assets/index-BeIcum_h.js | GET /assets/tidak-ada.js | GET /coffee-shops/abc | GET /api/tidak-ada |
+>     |---|---|---|---|---|
+>     | root: `node backend/dist/server.js` | 200 text/html | 200 text/javascript | 404 application/json | 200 text/html | 404 application/json |
+>     | backend: `node dist/server.js` | 200 text/html | 200 text/javascript | 404 application/json | 200 text/html | 404 application/json |
+> - Menjalankan `npm test` (backend): ✅ **24/24 passed** (6 files).
+> - Menampakkan `[test-env] DB host: ep-xxxx-pooler.c-3.ap-southeast-1.aws.neon.tech` (bukan DB utama).
+> - Verifikasi warning "frontend tidak ada" muncul ke **stderr** tanpa crash.
+> - Menyimpan file `backend/src/spa-fallback.test.ts` (TDD: 3 test baru).
+
+### 12. File yang Diperbarui dalam Sesi ini
+| File | Status | Keterangan |
+|------|--------|-----------|
+| `backend/src/app.ts` | Diubah | Resolusi path via `__dirname` + `FRONTEND_DIST_PATH`, warning, fallback GET-only/non-ekstensi, 404 `/api` konsisten |
+| `backend/src/spa-fallback.test.ts` | **Baru** | 3 test SPA fallback (TDD) |
+| `progres.md` | Diubah | Catatan verifikasi lengkap sesi ini |
+
+> **Catatan:** file lain yang muncul di `git status` (`README.md`, `backend/package.json`, `backend/src/app.test.ts`, `backend/src/middleware/upload.ts`, `backend/src/server.ts`, `frontend/src/services/coffeeShop.ts`, `package.json`) sudah **dimodifikasi sebelum sesi ini**; tidak diubah lagi kecuali `app.test.ts` yang memang sudah selaras.
+
+### 13. Verifikasi Lengkap (Ringkas)
+- `npm run check` (backend, `tsc --noEmit`): ✅ EXIT 0.
+- `npm run build` (backend, `prisma generate && tsc`): ✅ EXIT 0.
+- `npm run build` (root, `build:frontend && build:backend`): ✅ sukses. Output frontend:
+  ```
+  dist/index.html                   1.20 kB
+  dist/assets/index-CFcvbms2.css   50.88 kB
+  dist/assets/index-BeIcum_h.js   455.96 kB
+  ✓ built in 1.37s
+  ```
+- `npm test` (backend): ✅ **24/24 passed** (6 files).
+  - `[test-env] DB host: ep-xxxx-pooler.c-3.ap-southeast-1.aws.neon.tech` (pooled; bukan DB utama).
+  - Catatan flaky: `analytics.test.ts` sempat gagal 1x (lolos saat diisolasi & rerun full) — tidak terkait perubahan path/fallback.
+- Smoke test subprocess (env `.env.test`, Cloudinary dummy, `PORT=4100`, `NODE_ENV=production`, tanpa `FRONTEND_DIST_PATH`), path frontend/dist terpakai `D:\projects\ngopi-jember\frontend\dist` untuk KEDUA cara start:
+  | Cara start (cwd) | GET / | GET /assets/<js> | GET /assets/tidak-ada.js | GET /coffee-shops/abc | GET /api/tidak-ada |
+  |---|---|---|---|---|---|
+  | root: `node backend/dist/server.js` | 200 text/html | 200 text/javascript | 404 application/json | 200 text/html | 404 application/json |
+  | backend: `node dist/server.js` | 200 text/html | 200 text/javascript | 404 application/json | 200 text/html | 404 application/json |
+
+### 14. Aturan Operasional yang Tetap Dipatuhi
+- ✅ Tidak ada commit (`git status` menunjukkan semua masih `M`/`??`).
+- ✅ Tidak menyentuh DB (tidak `migrate`/`seed`/`reset`/`cleanup`).
+- ✅ Tidak mengedit file `.env*`.
+- ✅ Tidak menampilkan password/connection string utuh (hanya host DB test).
+
+### 15. `git status --short` Akhir Sesi
+```
+ M README.md
+ M backend/package.json
+ M backend/src/app.test.ts
+ M backend/src/app.ts
+ M backend/src/middleware/upload.ts
+ M backend/src/server.ts
+ M frontend/src/services/coffeeShop.ts
+ M package.json
+ M progres.md
+?? backend/src/spa-fallback.test.ts
+```
+
+---
+
+## 2026-10-16 - Perbaikan Gambar Rusak di Mode Production (Backend)
+
+> **Waktu selesai:** 16 oktober 2026 pukul 01.07 WIB
+
+### Gejala
+- Pada Vite dev server (`:5173`) gambar kartu & hero background tampil normal.
+- Pada build produksi yang disajikan Express (`:4000`), gambar kartu rusak (hanya alt text) dan hero background hilang.
+
+### Diagnosa (read-only dulu)
+1. **Card images** (`frontend/src/services/coffeeShop.ts:66-71`): `getImageUrl()` mengembalikan URL apa adanya bila diawali `http` (Cloudinary), selain itu di-prefix backend base. Data DB menyimpan path relatif `/uploads/<file>`.
+2. **Hero background** (`frontend/src/pages/Home.tsx:217-218`): URL eksternal Unsplash di inline CSS.
+3. `frontend/dist` hanya berisi `index.html` + `assets/*.css|js` (Vite bundle) — **tidak ada** file gambar; gambar berasal dari backend.
+4. **Akar masalah 1 — CSP**: `helmet()` default memasang CSP `img-src 'self' data:` yang memblokir Unsplash & Cloudinary. Terkonfirmasi dari header respons `curl -I http://localhost:4000/`.
+5. **Akar masalah 2 — /uploads 404**: middleware static `/uploads` sebelumnya hanya aktif saat `!isProduction` (`backend/src/app.ts`). Di produksi, request `/uploads/<file>` jatuh ke SPA fallback → 200 `text/html` (index.html), bukan gambar.
+6. Header `Cross-Origin-Resource-Policy: same-origin` juga berpotensi memblokir gambar bila frontend & backend beda origin.
+
+### Perubahan (`backend/src/app.ts` — backend-only, tidak menyentuh UI)
+1. `helmet()` → `helmet({ contentSecurityPolicy: { useDefaults: true, directives: { imgSrc: ["'self'", 'data:', 'blob:', 'https://res.cloudinary.com', 'https://images.unsplash.com'] } } })`. Directive lain tidak diubah; CSP tidak dimatikan.
+2. `/uploads` disajikan di **semua environment**; direktori `uploads` dibuat bila belum ada (anti-crash). Ditambah komentar bahwa ini fallback dan Cloudinary dianjurkan untuk produksi (disk ephemeral).
+3. Route `/uploads` memakai `setHeaders` untuk `Cross-Origin-Resource-Policy: cross-origin` (hanya route ini) agar aman bila frontend/backend beda origin.
+
+### Test Baru
+- `backend/src/uploads-static.test.ts` (baru): meregresi `GET /uploads/<file>` → 200 + isi file (bukan HTML/404) saat `NODE_ENV=production` (Cloudinary dummy). Test lama tidak diubah/dihilangkan.
+
+### Verifikasi
+- `npm run check` (backend): ✅ exit 0.
+- `npm run build` (backend) + `npm run build` (frontend): ✅ sukses.
+- `npm test` (backend): ✅ **25/25 passed** (7 files) — 24 lama + 1 baru.
+- Runtime (`NODE_ENV=production`, PORT=4000, cwd=backend):
+  - Header CSP kini: `img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com`.
+  - `GET /uploads/<file>.jpg` → **200 `image/jpeg`** (sebelumnya 200 `text/html`), CORP `cross-origin`.
+  - `GET /uploads/does-not-exist.jpg` → **404** (bukan index.html).
+  - HTML `GET /` tetap CORP `same-origin`.
+- Catatan operasional: saat menjalankan server uji, ada proses node lama menahan port 4000 yang membuat `prisma generate` gagal `EPERM`; proses tersebut dihentikan lalu build sukses.
+
+### File Berubah/Dibuat Sesi Ini
+| File | Status |
+|------|--------|
+| `backend/src/app.ts` | Diubah (helmet CSP + `/uploads` semua env + CORP cross-origin) |
+| `backend/src/uploads-static.test.ts` | **Baru** (regresi `/uploads` di production) |
+| `progres.md` | Diubah (catatan ini) |
+
+### `git status --short` (backend)
+```
+ M backend/src/app.ts
+?? backend/src/uploads-static.test.ts
+```
+(plus file dari sesi sebelumnya yang masih uncommitted)
+
+---
+
+*Last updated: 2026-10-16 WIB*

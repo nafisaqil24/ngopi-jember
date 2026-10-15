@@ -187,3 +187,57 @@ npm run build
 2. `POST /api/auth/register` dengan role OWNER → dapat JWT
 3. Owner login → buat coffee shop → muncul di daftar publik
 4. Admin login → akses dashboard admin (phase 5+)
+
+### Single-Service Deployment (Express + Frontend di Satu Proses)
+
+Menyajikan frontend dari `frontend/dist` di dalam proses backend Express.
+
+#### Persiapan
+```bash
+# Dari root project
+npm run build
+# Ini akan:
+# 1. Build frontend → frontend/dist/
+# 2. Install deps backend + prisma generate + build TypeScript → backend/dist/
+```
+
+#### Environment Variables (Production)
+Wajib diisi di `backend/.env`:
+| Variabel | Deskripsi |
+| --- | --- |
+| `DATABASE_URL` | Pooled connection (Neon: `-pooler`, `pgbouncer=true`) |
+| `DIRECT_URL` | Direct connection untuk migrasi (Neon: tanpa `-pooler`) |
+| `JWT_SECRET` | Minimal 32 karakter acak |
+| `CLIENT_URL` | Domain frontend production (comma-separated jika multi-domain) |
+| `CLOUDINARY_CLOUD_NAME` | Nama cloud Cloudinary |
+| `CLOUDINARY_API_KEY` | API key Cloudinary |
+| `CLOUDINARY_API_SECRET` | API secret Cloudinary |
+| `TRUST_PROXY` | (Opsional) Jumlah hop proxy, default `1` di production |
+
+#### Migrasi & Seed
+```bash
+cd backend
+npm run prisma:migrate:deploy   # Jalanin migrasi existing ke DB production
+npm run prisma:seed:prod        # Seed kategori & fasilitas saja
+npm run db:create-admin         # Buat akun admin pertama (dari ADMIN_* env)
+```
+
+#### Jalankan
+```bash
+# Dari root (setelah build)
+cd backend && npm start
+# Atau dari root: NODE_ENV=production node backend/dist/server.js
+```
+
+Server akan:
+- Melayani API di `/api/*`
+- Melayani static files dari `frontend/dist` di root
+- Fallback ke `index.html` untuk non-API GET (SPA routing)
+- Return 404 JSON untuk `/api/*` yang tidak ditemukan
+- Validasi env gagal start dengan pesan jelas jika variabel wajib kosong
+
+#### Verifikasi
+1. `GET /api/health` → `{ success: true }`
+2. Buka domain production → load SPA
+3. Login owner → buat coffee shop
+4. Upload gambar → ke Cloudinary (bukan local storage)
