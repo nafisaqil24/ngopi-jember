@@ -8,6 +8,7 @@ import { coffeeShopRouter } from './routes/coffee-shop.routes.js'
 import { ownerRouter } from './routes/owner.routes.js'
 import { adminRouter } from './routes/admin.routes.js'
 import { referenceRouter } from './routes/reference.routes.js'
+import { chatRouter } from './chat/chat.routes.js'
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js'
 
 export const app = express()
@@ -45,6 +46,7 @@ app.use(cors({
   },
   credentials: true,
 }))
+app.use('/api/chat', express.json({ limit: '4kb' }))
 app.use(express.json())
 
 // Static uploads: disajikan di semua environment sebagai fallback ketika
@@ -68,6 +70,7 @@ app.use('/api/coffee-shops', coffeeShopRouter)
 app.use('/api/owner', ownerRouter)
 app.use('/api/admin', adminRouter)
 app.use('/api', referenceRouter)
+app.use('/api/chat', chatRouter)
 
 // 404 JSON untuk endpoint API yang tidak dikenal (konsisten walau frontend belum di-build)
 app.use('/api', (_req, res) => {

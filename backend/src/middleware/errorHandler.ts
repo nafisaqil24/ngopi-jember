@@ -44,7 +44,19 @@ export function errorHandler(error: Error, _request: Request, response: Response
     }
   }
 
-  // 3. General Error
+  // 3. Payload terlalu besar (body-parser / express.json limit)
+  if (
+    (error as any).type === 'entity.too.large' ||
+    (error as any).status === 413 ||
+    (error as any).statusCode === 413
+  ) {
+    return response.status(413).json({
+      success: false,
+      message: 'Ukuran data yang dikirim terlalu besar.',
+    })
+  }
+
+  // 4. General Error
   const statusCode = (error as any).statusCode || 500
   const message = statusCode === 500 && process.env.NODE_ENV === 'production'
     ? 'Terjadi kesalahan pada server'
