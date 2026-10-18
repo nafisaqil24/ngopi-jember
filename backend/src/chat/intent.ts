@@ -3,6 +3,25 @@ import { callLlmChat, isLlmEnabled, ChatMessage } from './llm.client.js'
 import { parsedIntentSchema, ParsedIntent } from './schema.js'
 import { prisma } from '../lib/prisma.js'
 
+// Buang key bernilai null secara rekursif (termasuk di dalam filters).
+// Model (mis. gpt-oss) sering mengisi "shopQuery": null / "faqTopic": null,
+// dan skema .strict() menolak null; normalisasi ini membuat hasil tetap valid
+// tanpa melonggarkan skema.
+function stripNullKeys(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(stripNullKeys)
+  }
+  if (value && typeof value === 'object') {
+    const result: Record<string, unknown> = {}
+    for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+      if (val === null) continue
+      result[key] = stripNullKeys(val)
+    }
+    return result
+  }
+  return value
+}
+
 export async function parseUserIntent(
   userMessage: string,
   history: { role: 'user' | 'assistant'; content: string }[] = []
@@ -38,7 +57,8 @@ export async function parseUserIntent(
     }
 
     // Validate with Zod
-    const validationResult = parsedIntentSchema.safeParse(parsedJson)
+    const normalizedJson = stripNullKeys(parsedJson)
+    const validationResult = parsedIntentSchema.safeParse(normalizedJson)
     if (!validationResult.success) {
       return { intent: 'smalltalk' }
     }

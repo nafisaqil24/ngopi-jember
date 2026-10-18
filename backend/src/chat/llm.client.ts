@@ -35,8 +35,9 @@ export async function callLlmChat(messages: ChatMessage[]): Promise<string> {
         model,
         messages,
         temperature: 0.1,
-        max_tokens: 300,
+        max_tokens: 1024,
         response_format: { type: 'json_object' },
+        reasoning_effort: 'low',
       }),
       signal: AbortSignal.timeout(timeoutMs),
     })
@@ -48,6 +49,26 @@ export async function callLlmChat(messages: ChatMessage[]): Promise<string> {
     console.log(`[LLM] status=${status} duration=${duration}ms model=${model}`)
 
     if (!response.ok) {
+      // Log ringkas error provider: hanya code + message (dipotong), plus
+      // status/duration/model. TIDAK PERNAH log failed_generation, messages,
+      // isi pesan pengguna, header, atau API key.
+      let providerCode = 'unknown'
+      let providerMessage = 'unknown'
+      try {
+        const errBody = (await response.json()) as {
+          error?: { code?: unknown; message?: unknown }
+        }
+        if (typeof errBody?.error?.code === 'string') providerCode = errBody.error.code
+        if (typeof errBody?.error?.message === 'string') {
+          providerMessage = errBody.error.message.slice(0, 200)
+        }
+      } catch {
+        // Body error bisa bukan JSON; abaikan.
+      }
+      const errorDuration = Date.now() - startTime
+      console.error(
+        `[LLM] provider error status=${status} duration=${errorDuration}ms model=${model} code=${providerCode} message=${providerMessage}`
+      )
       throw new Error(`LLM API error status: ${status}`)
     }
 
