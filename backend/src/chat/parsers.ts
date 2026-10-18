@@ -10,13 +10,15 @@ export function parsePriceRange(text: string | null | undefined): PriceRangePars
     return null
   }
 
-  // Remove 'rp', whitespace, and thousands separators (dots or commas)
-  // E.g. "Rp15.000 - Rp50.000" -> "15000 - 50000"
-  // E.g. "25000 - 50000"
-  const numbersOnly = cleaned.replace(/rp/g, '').replace(/\./g, '').replace(/,/g, '')
+  // Remove 'rp', whitespace, convert rb/k/ribu to thousands, and remove thousands separators (dots or commas)
+  let processed = cleaned
+    .replace(/rp/g, '')
+    .replace(/(\d+)\s*(k|rb|ribu)\b/g, (_, num) => String(parseInt(num, 10) * 1000))
+    .replace(/\./g, '')
+    .replace(/,/g, '')
   
   // Find all number groups
-  const matches = numbersOnly.match(/\d+/g)
+  const matches = processed.match(/\d+/g)
   if (!matches || matches.length === 0) return null
 
   if (matches.length === 1) {

@@ -71,32 +71,31 @@ export function buildReplyMessage(
 
   if (intent === 'search_shops' || intent === 'nearby') {
     if (!searchResult || searchResult.shops.length === 0) {
-      const meta = searchResult?.metadata
-      let honestyNote = ''
-      if (meta) {
-        if (meta.jumlahTanpaDataHarga === meta.totalKedaiTerverifikasi) {
-          honestyNote = ' (Catatan: Saat ini seluruh kedai terverifikasi belum memiliki data harga terstruktur).'
-        } else if (meta.jumlahTanpaFasilitas > 0) {
-          honestyNote = ` (Catatan: ${meta.jumlahTanpaFasilitas} dari ${meta.totalKedaiTerverifikasi} kedai belum mencatat data fasilitas).`
-        }
-      }
       return {
-        reply: `Maaf, tidak ditemukan kedai kopi yang sesuai dengan kriteria pencarian Anda${honestyNote}`,
+        reply: 'Maaf, tidak ditemukan kedai kopi yang sesuai dengan kriteria pencarian Anda. Coba gunakan kata kunci lain atau pilih kecamatan yang berbeda.',
         shops: [],
       }
     }
 
     const { shops, metadata } = searchResult
-    const header = `Ditemukan ${shops.length} kedai kopi (dari total ${metadata.totalKedaiTerverifikasi} kedai terverifikasi):`
+    let header = `Ditemukan ${shops.length} kedai kopi:`
+    if (metadata.fallbackUsed === 'facility_relaxed') {
+      header = `Belum ada kedai dengan fasilitas tersebut di lokasi yang diminta. Berikut rekomendasi kedai di area tersebut (silakan cek fasilitasnya di halaman detail):`
+    } else if (metadata.fallbackUsed === 'price_relaxed' || metadata.fallbackUsed === 'both_relaxed') {
+      header = `Belum ada kedai dengan kriteria harga tersebut di lokasi yang diminta. Berikut rekomendasi kedai lainnya di area tersebut:`
+    }
+
     const formattedList = shops.map((s) => formatShopSummary(s)).join('\n\n')
 
-    let extraNote = ''
-    if (metadata.jumlahTanpaDataHarga > 0 || metadata.jumlahTanpaJamBuka > 0) {
-      extraNote = `\n\n*(Catatan data: ${metadata.jumlahTanpaDataHarga} kedai belum ada info harga, ${metadata.jumlahTanpaJamBuka} kedai belum ada jam buka)*`
+    let honestyNote = ''
+    if (metadata.totalKedaiTerverifikasi > 0 && metadata.jumlahTanpaDataHarga === metadata.totalKedaiTerverifikasi) {
+      honestyNote = ' (Catatan: Saat ini belum ada info harga tercatat untuk kedai-kedai ini).'
+    } else if (metadata.jumlahTanpaFasilitas > 0) {
+      honestyNote = ` (Catatan: ${metadata.jumlahTanpaFasilitas} dari ${metadata.totalKedaiTerverifikasi} kedai belum mencatat data fasilitas).`
     }
 
     return {
-      reply: `${header}\n\n${formattedList}${extraNote}`,
+      reply: `${header}\n\n${formattedList}${honestyNote}`,
       shops,
     }
   }

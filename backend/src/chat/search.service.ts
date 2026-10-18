@@ -80,13 +80,11 @@ export interface SearchResponse {
     jumlahTanpaDataHarga: number
     jumlahTanpaJamBuka: number
     jumlahTanpaFasilitas: number
+    fallbackUsed?: 'facility_relaxed' | 'price_relaxed' | 'both_relaxed'
   }
 }
 
-export async function searchShops(
-  filters: SearchFilters,
-  userLocation?: UserLocation
-): Promise<SearchResponse> {
+async function executeSearch(filters: SearchFilters, userLocation?: UserLocation) {
   const allVerifiedShops = await prisma.coffeeShop.findMany({
     where: {
       isVerified: true,
@@ -213,6 +211,46 @@ export async function searchShops(
       jumlahTanpaDataHarga,
       jumlahTanpaJamBuka,
       jumlahTanpaFasilitas,
+    },
+  }
+}
+
+export async function searchShops(
+  filters: SearchFilters,
+  userLocation?: UserLocation
+): Promise<SearchResponse> {
+  let activeFilters = { ...filters }
+  let fallbackUsed: 'facility_relaxed' | 'price_relaxed' | 'both_relaxed' | undefined = undefined
+
+  let result = await executeSearch(activeFilters, userLocation)
+
+  if (result.shops.length === 0) {
+    // Fallback A: relax facilitySlugs if present
+    if (activeFilters.facilitySlugs && activeFilters.facilitySlugs.length > 0) {
+      activeFilters = { ...activeFilters, facilitySlugs: undefined }
+      const resA = await executeSearch(activeFilters, userLocation)
+      if (resA.shops.length > 0) {
+        result = resA
+        fallbackUsed = 'facility_relaxed'
+      }
+    }
+
+    // Fallback B: relax maxPrice if still 0 and maxPrice was present
+    if (result.shops.length === 0 && activeFilters.maxPrice !== undefined) {
+      activeFilters = { ...activeFilters, facilitySlugs: undefined, maxPrice: undefined }
+      const resB = await executeSearch(activeFilters, userLocation)
+      if (resB.shops.length > 0) {
+        result = resB
+        fallbackUsed = filters.facilitySlugs && filters.facilitySlugs.length > 0 ? 'both_relaxed' : 'price_relaxed'
+      }
+    }
+  }
+
+  return {
+    shops: result.shops,
+    metadata: {
+      ...result.metadata,
+      fallbackUsed,
     },
   }
 }

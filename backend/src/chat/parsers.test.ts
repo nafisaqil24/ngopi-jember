@@ -7,6 +7,13 @@ describe('Parsers: parsePriceRange', () => {
     expect(parsePriceRange('Rp25000 - Rp50000')).toEqual({ min: 25000, max: 50000 })
   })
 
+  it('parses price range with rb, k, ribu and extra spaces', () => {
+    expect(parsePriceRange('25rb - 50rb')).toEqual({ min: 25000, max: 50000 })
+    expect(parsePriceRange('25 k - 50 k')).toEqual({ min: 25000, max: 50000 })
+    expect(parsePriceRange('25 ribu - 50 ribu')).toEqual({ min: 25000, max: 50000 })
+    expect(parsePriceRange('Rp 25k - 50k')).toEqual({ min: 25000, max: 50000 })
+  })
+
   it('handles "Belum tersedia" or invalid ranges', () => {
     expect(parsePriceRange('Belum tersedia')).toBeNull()
     expect(parsePriceRange('')).toBeNull()
