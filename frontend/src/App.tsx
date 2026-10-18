@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { matchPath, Route, Routes, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import CoffeeShopExplorer from "./pages/CoffeeShopExplorer";
 import CoffeeShopDetail from "./pages/CoffeeShopDetail";
@@ -10,6 +10,11 @@ import OwnerDashboard from "./pages/owner/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCoffeeShopEdit from "./pages/admin/CoffeeShopEdit";
 import { ToastProvider } from "./components/common/Toast";
+import ChatWidget from "./components/chat/ChatWidget";
+
+// Allowlist rute publik yang menampilkan widget chat. Selain ini
+// (login, register, dashboard/owner, admin, NotFound) tidak ditampilkan.
+const CHAT_PATH_PATTERNS = ["/", "/coffee-shops", "/coffee-shops/:slug"];
 
 // App.tsx sekarang HANYA berisi routing. Sebelumnya file ini menumpuk
 // semua komponen (Layout, Home, Explorer, Detail, Auth, dll) jadi satu
@@ -23,6 +28,11 @@ import { ToastProvider } from "./components/common/Toast";
 // dibaca untuk melihat "peta" semua route yang ada di aplikasi.
 
 export default function App() {
+  const location = useLocation();
+  const showChat = CHAT_PATH_PATTERNS.some(
+    (path) => matchPath({ path, end: true }, location.pathname) !== null
+  );
+
   return (
     <ToastProvider>
       <Routes>
@@ -65,6 +75,7 @@ export default function App() {
         />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      {showChat && <ChatWidget />}
     </ToastProvider>
   );
 }
