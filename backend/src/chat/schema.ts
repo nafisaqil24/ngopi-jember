@@ -28,10 +28,22 @@ export const chatFiltersSchema = z
   })
   .strict()
 
+export const priorityLevelEnum = z.enum(['tinggi', 'normal', 'rendah'])
+
+export const prioritiesSchema = z
+  .object({
+    distance: priorityLevelEnum.optional(),
+    price: priorityLevelEnum.optional(),
+    rating: priorityLevelEnum.optional(),
+    facility: priorityLevelEnum.optional(),
+  })
+  .strict()
+
 export const parsedIntentSchema = z
   .object({
     intent: intentEnum,
     filters: chatFiltersSchema.optional(),
+    priorities: prioritiesSchema.optional(),
     shopQuery: z.string().max(100).trim().optional(),
     faqTopic: faqTopicsEnum.optional(),
   })

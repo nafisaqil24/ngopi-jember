@@ -102,12 +102,16 @@ chatRouter.post(
           facilitySlugs: filters.facilitySlugs,
           maxPrice: filters.maxPrice,
           openNow: filters.openNow,
+          priorities: parsedIntent.priorities,
         })
       } else if (parsedIntent.intent === 'nearby') {
         if (!userLocation) {
           needsLocation = true
         } else {
-          searchResult = await searchShops({}, { lat: userLocation.lat, lng: userLocation.lng, radiusKm: 25 })
+          searchResult = await searchShops(
+            { priorities: parsedIntent.priorities },
+            { lat: userLocation.lat, lng: userLocation.lng, radiusKm: 25 }
+          )
         }
       } else if (parsedIntent.intent === 'shop_detail' && parsedIntent.shopQuery) {
         shopDetail = await getShopBySlugOrName(parsedIntent.shopQuery)

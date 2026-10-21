@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '../lib/prisma.js'
 import { parsePriceRange, getOpenStatus } from './parsers.js'
 import { calculateDistance } from './geo.js'
+import { calculateSAW, PriorityLevel, SawCriterion } from './saw.service.js'
 
 export interface SearchFilters {
   district?: string
@@ -9,6 +10,7 @@ export interface SearchFilters {
   maxPrice?: number
   openNow?: boolean
   searchQuery?: string
+  priorities?: Partial<Record<SawCriterion, PriorityLevel>>
 }
 
 export interface UserLocation {
@@ -71,6 +73,8 @@ export type PublicShopResult = {
   image: string | null
   distanceKm?: number
   openStatus?: 'buka' | 'tutup' | 'tidak_diketahui'
+  sawScore?: number
+  sawDetails?: any
 }
 
 export interface SearchResponse {
@@ -196,10 +200,42 @@ async function executeSearch(filters: SearchFilters, userLocation?: UserLocation
     return true
   })
 
-  if (userLocation) {
-    filtered.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999))
-  } else {
-    filtered.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+  const sawInputs = filtered.map((shop) => {
+    const priceParsed = parsePriceRange(shop.priceRange)
+    let priceMidpoint: number | null = null
+    if (priceParsed && priceParsed.min !== null && priceParsed.max !== null) {
+      priceMidpoint = (priceParsed.min + priceParsed.max) / 2
+    } else if (priceParsed && priceParsed.min !== null) {
+      priceMidpoint = priceParsed.min
+    } else if (priceParsed && priceParsed.max !== null) {
+      priceMidpoint = priceParsed.max
+    }
+
+    return {
+      slug: shop.slug,
+      distanceKm: shop.distanceKm,
+      priceMidpoint,
+      rating: shop.rating,
+      facilityCount: shop.facilities.length,
+    }
+  })
+
+  const includeDistance = !!userLocation
+  const sawResults = calculateSAW(sawInputs, includeDistance, filters.priorities)
+  const sawMap = new Map(sawResults.map((r) => [r.slug, r]))
+
+  filtered.sort((a, b) => {
+    const scoreA = sawMap.get(a.slug)?.score ?? 0
+    const scoreB = sawMap.get(b.slug)?.score ?? 0
+    return scoreB - scoreA
+  })
+
+  for (const shop of filtered) {
+    const res = sawMap.get(shop.slug)
+    if (res) {
+      shop.sawScore = res.score
+      shop.sawDetails = res.details
+    }
   }
 
   const limited = filtered.slice(0, 5)

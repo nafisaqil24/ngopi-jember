@@ -5,6 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:test": "node --watch --env-file=.env.test --import tsx src/server.ts",
     "build": "prisma generate && tsc",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
@@ -15,6 +16,8 @@
     "prisma:reset": "tsx prisma/reset-data.ts",
     "prisma:update-shops": "tsx prisma/update-coffee-shops.ts",
     "prisma:cleanup-test": "tsx prisma/cleanup-test-data.ts",
+    "prisma:seed-uji": "tsx prisma/seed-uji.ts",
+    "prisma:cleanup-uji": "tsx prisma/cleanup-uji.ts",
     "db:create-admin": "tsx prisma/create-admin.ts",
     "check": "tsc --noEmit",
     "test": "vitest run"

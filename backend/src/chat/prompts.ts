@@ -40,6 +40,12 @@ Skema JSON yang harus dikembalikan:
     "maxPrice": number (opsional, angka rupiah maksimum mis. 30000),
     "openNow": boolean (opsional, true jika mencari yang sedang buka)
   },
+  "priorities": {
+    "distance": "tinggi" | "normal" | "rendah" (opsional, tingkat prioritas jarak/kedekatan),
+    "price": "tinggi" | "normal" | "rendah" (opsional, tingkat prioritas harga/murah),
+    "rating": "tinggi" | "normal" | "rendah" (opsional, tingkat prioritas rating/ulasan bagus),
+    "facility": "tinggi" | "normal" | "rendah" (opsional, tingkat prioritas kelengkapan fasilitas)
+  },
   "shopQuery": "string (opsional, nama kedai atau slug spesifik untuk detail)",
   "faqTopic": "apa_itu" | "cara_daftar" | "daftar_owner" | "tambah_kedai" | "verifikasi" | "ulasan" | "gps" (opsional)
 }
@@ -47,8 +53,14 @@ Skema JSON yang harus dikembalikan:
 Daftar slug fasilitas yang valid untuk facilitySlugs:
 [${facilitySlugs.map((s) => `"${s}"`).join(', ')}]
 
+Aturan Ekstraksi Prioritas:
+- Jika pengguna menekankan kata seperti "yang penting murah", "cari yang paling murah" -> set priorities.price: "tinggi".
+- Jika pengguna menekankan "yang paling dekat", "di sekitar sini" -> set priorities.distance: "tinggi".
+- Jika pengguna menekankan "rating bagus", "paling enak" -> set priorities.rating: "tinggi".
+- Jangan mengarang angka bobot, cukup kembalikan level "tinggi", "normal", atau "rendah".
+
 Contoh intent:
-- Mencari kafe dengan wifi atau di kecamatan tertentu -> "search_shops"
+- Mencari kafe dengan wifi dan yang penting murah -> "search_shops", filters: { facilitySlugs: ["wifi"] }, priorities: { price: "tinggi" }
 - Menanyakan info detail kedai tertentu ("Hiro Coffee", "Namu") -> "shop_detail"
 - Mencari kafe terdekat / dari lokasi GPS -> "nearby"
 - Tanya soal web, cara daftar, owner, verifikasi, ulasan, gps -> "faq"
