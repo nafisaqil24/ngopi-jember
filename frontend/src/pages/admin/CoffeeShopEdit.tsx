@@ -3,11 +3,13 @@ import { Link, useParams } from "react-router-dom";
 import MainLayout from "../../layouts/MainLayout";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
+import GoogleRatingPanel, { type GoogleRatingInput } from "../../components/admin/GoogleRatingPanel";
 import { getImageUrl, listCategories, listFacilities, type ApiFacility } from "../../services/coffeeShop";
 import {
   getAdminCoffeeShop,
   updateAdminCoffeeShop,
   updateAdminShopTaxonomy,
+  updateAdminGoogleRating,
   createAdminMenu,
   updateAdminMenu,
   deleteAdminMenu,
@@ -59,6 +61,7 @@ export default function AdminCoffeeShopEdit() {
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [savingGoogleRating, setSavingGoogleRating] = useState(false);
 
   // State menu
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -188,6 +191,35 @@ export default function AdminCoffeeShopEdit() {
       toast.error(message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSaveGoogleRating(input: GoogleRatingInput) {
+    if (!shop || !token) return;
+    setSavingGoogleRating(true);
+    try {
+      await updateAdminGoogleRating(token, shop.id, input);
+      toast.success("Rating Google berhasil disimpan.");
+      await loadShop(shop.id);
+    } catch (err: any) {
+      toast.error(err instanceof ApiError ? err.message : "Gagal menyimpan rating Google");
+    } finally {
+      setSavingGoogleRating(false);
+    }
+  }
+
+  async function handleDeleteGoogleRating() {
+    if (!shop || !token) return;
+    if (!window.confirm("Hapus rating Google Maps untuk kedai ini?")) return;
+    setSavingGoogleRating(true);
+    try {
+      await updateAdminGoogleRating(token, shop.id, { googleRating: null });
+      toast.success("Rating Google berhasil dihapus.");
+      await loadShop(shop.id);
+    } catch (err: any) {
+      toast.error(err instanceof ApiError ? err.message : "Gagal menghapus rating Google");
+    } finally {
+      setSavingGoogleRating(false);
     }
   }
 
@@ -529,6 +561,15 @@ export default function AdminCoffeeShopEdit() {
                 </div>
               </form>
             </div>
+
+            <GoogleRatingPanel
+              initialRating={shop.googleRating}
+              initialReviewCount={shop.googleReviewCount}
+              initialRatingAt={shop.googleRatingAt}
+              saving={savingGoogleRating}
+              onSave={handleSaveGoogleRating}
+              onDelete={handleDeleteGoogleRating}
+            />
 
             {/* Menu CRUD */}
             <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-espresso/10">

@@ -40,6 +40,9 @@ export type ApiAdminShopDetail = {
   status: "OPEN" | "CLOSED" | "TEMPORARILY_CLOSED";
   isVerified: boolean;
   isFeatured: boolean;
+  googleRating: number | null;
+  googleReviewCount: number | null;
+  googleRatingAt: string | null;
   owner: { id: string; name: string; email: string };
   categories: { category: { id: string; name: string; slug: string } }[];
   facilities: { facility: { id: string; name: string; slug: string } }[];
@@ -161,6 +164,19 @@ export async function updateAdminCoffeeShop(token: string, shopId: string, input
     throw new ApiError(payload.success ? "Permintaan gagal" : payload.message || "Gagal memperbarui kedai");
   }
   return payload.data;
+}
+
+// Set atau hapus rating Google Maps sebuah kedai (khusus ADMIN).
+// Mengirim googleRating: null akan menghapus ketiga field rating Google.
+export async function updateAdminGoogleRating(
+  token: string,
+  shopId: string,
+  input: { googleRating: number | null; googleReviewCount?: number | null; googleRatingAt?: string | null }
+): Promise<ApiAdminShopDetail> {
+  return fetchWithAuth(`/admin/coffee-shops/${shopId}/google-rating`, token, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
 }
 
 // Set kategori & fasilitas kedai (endpoint yang sudah mengizinkan ADMIN).

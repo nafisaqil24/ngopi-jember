@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js'
 import { parsePriceRange, getOpenStatus } from './parsers.js'
 import { calculateDistance } from './geo.js'
 import { calculateSAW, PriorityLevel, SawCriterion } from './saw.service.js'
+import { getEffectiveRating } from '../utils/rating.js'
 
 export interface SearchFilters {
   district?: string
@@ -51,6 +52,9 @@ const publicShopSelect = {
   reviews: {
     select: { rating: true },
   },
+  googleRating: true,
+  googleReviewCount: true,
+  googleRatingAt: true,
   _count: {
     select: { reviews: true },
   },
@@ -70,6 +74,7 @@ export type PublicShopResult = {
   facilities: string[]
   rating: number | null
   reviewCount: number
+  ratingSource?: 'google' | 'ulasan' | null
   image: string | null
   distanceKm?: number
   openStatus?: 'buka' | 'tutup' | 'tidak_diketahui'
@@ -137,9 +142,7 @@ async function executeSearch(filters: SearchFilters, userLocation?: UserLocation
 
     const categoryNames = shop.categories.map((c) => c.category.name)
 
-    const rating = shop.reviews.length
-      ? shop.reviews.reduce((sum, r) => sum + r.rating, 0) / shop.reviews.length
-      : null
+    const effective = getEffectiveRating(shop)
 
     const truncatedDesc =
       shop.description.length > 160
@@ -166,8 +169,9 @@ async function executeSearch(filters: SearchFilters, userLocation?: UserLocation
       description: truncatedDesc,
       categories: categoryNames,
       facilities: facilityNames,
-      rating: rating ? Math.round(rating * 10) / 10 : null,
-      reviewCount: shop._count.reviews,
+      rating: effective.rating,
+      reviewCount: effective.reviewCount,
+      ratingSource: effective.ratingSource,
       image: shop.images[0]?.imageUrl ?? null,
       distanceKm,
       openStatus,
@@ -310,9 +314,7 @@ export async function getShopBySlugOrName(query: string): Promise<PublicShopResu
   const openStatus = getOpenStatus(shop.openingHours, now)
   const facilityNames = shop.facilities.map((f) => f.facility.name)
   const categoryNames = shop.categories.map((c) => c.category.name)
-  const rating = shop.reviews.length
-    ? shop.reviews.reduce((sum, r) => sum + r.rating, 0) / shop.reviews.length
-    : null
+  const effective = getEffectiveRating(shop)
 
   const truncatedDesc =
     shop.description.length > 160
@@ -331,8 +333,9 @@ export async function getShopBySlugOrName(query: string): Promise<PublicShopResu
     description: truncatedDesc,
     categories: categoryNames,
     facilities: facilityNames,
-    rating: rating ? Math.round(rating * 10) / 10 : null,
-    reviewCount: shop._count.reviews,
+    rating: effective.rating,
+    reviewCount: effective.reviewCount,
+    ratingSource: effective.ratingSource,
     image: shop.images[0]?.imageUrl ?? null,
     openStatus,
   }

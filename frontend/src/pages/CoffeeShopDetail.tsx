@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import MainLayout from "../layouts/MainLayout";
 import { getCoffeeShopBySlug, getImageUrl, createReview, trackEvent, ApiError, type ApiCoffeeShopDetail } from "../services/coffeeShop";
 import { useAuth } from "../hooks/useAuth";
+import { formatGoogleRatingLabel } from "../utils/rating";
 import NotFound from "./NotFound";
 
 // Catat event analitik "sekali per sesi browser" untuk sebuah kedai.
@@ -197,10 +198,17 @@ export default function CoffeeShopDetail() {
                 </div>
                 <h1 className="mt-3 text-4xl font-black text-heading">{shop.name}</h1>
                 <p className="mt-2 text-body font-medium">⌖ {shop.address}</p>
-              </div>
-              <div className="rounded-xl bg-white px-4 py-3 text-right shadow-sm ring-1 ring-subtle">
-                <b className="text-xl text-terracotta">★ {rating.toFixed(1)}</b>
-                <p className="text-xs text-body font-medium">{shop.reviewCount} ulasan</p>
+                <div className="mt-3 w-fit rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-subtle flex flex-col items-start text-left">
+                  <b className="text-xl text-terracotta">★ {rating.toFixed(1)}</b>
+                  {shop.ratingSource !== "google" && (
+                    <p className="text-xs text-body font-medium">{shop.reviewCount} ulasan</p>
+                  )}
+                  {shop.ratingSource === "google" && (
+                    <p className="mt-1 text-[10px] leading-tight text-body/70 text-left">
+                      {formatGoogleRatingLabel(shop.googleReviewCount, shop.googleRatingAt)}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 

@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authenticate, authorize, type AuthenticatedRequest } from '../middleware/auth.js'
+import { getEffectiveRating } from '../utils/rating.js'
 
 export const adminRouter = Router()
 
@@ -19,6 +20,27 @@ const featuredShopSchema = z.object({
 const updateRoleSchema = z.object({
   role: z.enum(['USER', 'OWNER', 'ADMIN']),
 })
+
+const googleRatingSchema = z
+  .object({
+    googleRating: z
+      .number()
+      .min(0, { message: 'Rating minimal 0' })
+      .max(5, { message: 'Rating maksimal 5' })
+      .refine((val) => Number(val.toFixed(1)) === val, {
+        message: 'Rating harus angka dengan maksimal 1 desimal (0-5)',
+      })
+      .nullable()
+      .optional(),
+    googleReviewCount: z.coerce
+      .number()
+      .int({ message: 'Jumlah ulasan harus bilangan bulat' })
+      .min(0, { message: 'Jumlah ulasan minimal 0' })
+      .optional()
+      .nullable(),
+    googleRatingAt: z.coerce.date().optional().nullable(),
+  })
+  .strict()
 
 function toParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value
@@ -114,6 +136,59 @@ adminRouter.patch('/coffee-shops/:id/featured', async (request: AuthenticatedReq
     })
 
     return response.json({ success: true, data: updated })
+  } catch (error) {
+    return next(error)
+  }
+})
+
+// PATCH /api/admin/coffee-shops/:id/google-rating - Atur rating Google Maps (khusus ADMIN)
+adminRouter.patch('/coffee-shops/:id/google-rating', async (request: AuthenticatedRequest, response, next) => {
+  try {
+    const parsed = googleRatingSchema.safeParse(request.body)
+    if (!parsed.success) {
+      return response.status(400).json({
+        success: false,
+        message: 'Data rating Google tidak valid',
+        errors: parsed.error.flatten().fieldErrors,
+      })
+    }
+
+    const id = toParam(request.params.id)
+    if (!id) return response.status(400).json({ success: false, message: 'ID coffee shop tidak valid' })
+
+    const shop = await prisma.coffeeShop.findUnique({ where: { id } })
+    if (!shop) return response.status(404).json({ success: false, message: 'Coffee shop tidak ditemukan' })
+
+    const data: {
+      googleRating?: number | null
+      googleReviewCount?: number | null
+      googleRatingAt?: Date | null
+    } = {}
+
+    if ('googleRating' in parsed.data) {
+      if (parsed.data.googleRating === null) {
+        // Mengirim null menghapus ketiga field rating Google.
+        data.googleRating = null
+        data.googleReviewCount = null
+        data.googleRatingAt = null
+      } else if (parsed.data.googleRating !== undefined) {
+        data.googleRating = parsed.data.googleRating
+        data.googleReviewCount = parsed.data.googleReviewCount ?? null
+        data.googleRatingAt = parsed.data.googleRatingAt ?? new Date()
+      }
+    } else {
+      if ('googleReviewCount' in parsed.data) data.googleReviewCount = parsed.data.googleReviewCount ?? null
+      if ('googleRatingAt' in parsed.data) data.googleRatingAt = parsed.data.googleRatingAt ?? null
+    }
+
+    const updated = await prisma.coffeeShop.update({
+      where: { id },
+      data,
+      include: { reviews: { select: { rating: true } }, _count: { select: { reviews: true } } },
+    })
+
+    const effective = getEffectiveRating(updated)
+    return response.json({ success: true, data: { ...updated, ...effective } })
   } catch (error) {
     return next(error)
   }

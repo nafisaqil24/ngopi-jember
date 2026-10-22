@@ -20,7 +20,7 @@ export default function ChatShopCard({ shop }: { shop: ChatShop }) {
   return (
     <Link
       to={`/coffee-shops/${shop.slug}`}
-      className="flex gap-3 rounded-xl border border-subtle bg-surface p-2.5 shadow-xs transition hover:border-terracotta hover:bg-surface-hover"
+      className="flex gap-3 rounded-xl border border-[#E7D5C5] bg-surface p-2.5 shadow-xs transition hover:border-[#C2410C] hover:bg-[#FFF7ED]"
     >
       {imageUrl ? (
         <img
@@ -32,7 +32,7 @@ export default function ChatShopCard({ shop }: { shop: ChatShop }) {
       ) : (
         <div
           aria-hidden
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-info-soft text-xl"
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[#FFF7ED] text-xl"
         >
           ☕
         </div>

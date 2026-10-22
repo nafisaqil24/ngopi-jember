@@ -3,6 +3,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authenticate, authorize, type AuthenticatedRequest } from '../middleware/auth.js'
+import { getEffectiveRating } from '../utils/rating.js'
 
 export const ownerRouter = Router()
 
@@ -31,11 +32,16 @@ ownerRouter.get('/coffee-shop', async (request: AuthenticatedRequest, response, 
     })
     if (!shop) return response.json({ success: true, data: null })
 
-    const rating = shop.reviews.length
-      ? shop.reviews.reduce((sum, review) => sum + review.rating, 0) / shop.reviews.length
-      : null
-
-    return response.json({ success: true, data: { ...shop, rating, reviewCount: shop.reviews.length } })
+    const effective = getEffectiveRating(shop)
+    return response.json({
+      success: true,
+      data: {
+        ...shop,
+        rating: effective.rating,
+        reviewCount: effective.reviewCount,
+        ratingSource: effective.ratingSource,
+      },
+    })
   } catch (error) { return next(error) }
 })
 

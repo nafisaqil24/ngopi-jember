@@ -7,6 +7,7 @@ import { authenticate, authorize, type AuthenticatedRequest } from '../middlewar
 import { upload, uploadToCloudinaryIfNeeded } from '../middleware/upload.js'
 import { menuRouter } from './menu.routes.js'
 import { reviewRouter } from './review.routes.js'
+import { getEffectiveRating } from '../utils/rating.js'
 
 export const coffeeShopRouter = Router()
 
@@ -185,7 +186,11 @@ coffeeShopRouter.get('/', async (request, response, next) => {
       prisma.coffeeShop.findMany({ where, include: cardInclude, orderBy, skip: (page - 1) * limit, take: limit }),
       prisma.coffeeShop.count({ where }),
     ])
-    const results = shops.filter(shop => !minRating || shop.reviews.length === 0 || shop.reviews.reduce((totalRating, review) => totalRating + review.rating, 0) / shop.reviews.length >= minRating)
+    const results = shops.filter(shop => {
+      if (!minRating) return true
+      const effective = getEffectiveRating(shop)
+      return effective.rating === null || effective.rating >= minRating
+    })
     return response.json({ success: true, data: results.map(toCard), meta: { page, limit, total, totalPages: Math.ceil(total / limit) } })
   } catch (error) { return next(error) }
 })
@@ -214,9 +219,8 @@ coffeeShopRouter.get('/nearby', async (request, response, next) => {
 
     const shopsWithDistance = shops.map((shop) => {
       const distance = calculateDistance(lat, lng, shop.latitude!, shop.longitude!)
-      const rating = shop.reviews.length
-        ? shop.reviews.reduce((sum, review) => sum + review.rating, 0) / shop.reviews.length
-        : 0
+      const effective = getEffectiveRating(shop)
+      const rating = effective.rating ?? 0
 
       return {
         ...toCard(shop),
@@ -258,8 +262,18 @@ coffeeShopRouter.get('/:slug', async (request, response, next) => {
     if (!slug.success) return response.status(400).json({ success: false, message: 'Slug coffee shop tidak valid' })
     const shop = await prisma.coffeeShop.findUnique({ where: { slug: slug.data }, include: { categories: { include: { category: true } }, facilities: { include: { facility: true } }, images: { orderBy: { createdAt: 'desc' } }, menus: { orderBy: { createdAt: 'asc' } }, promotions: { where: { isActive: true }, orderBy: { createdAt: 'desc' } }, reviews: { include: { user: { select: { name: true } } }, orderBy: { createdAt: 'desc' } }, subscription: true } })
     if (!shop || !shop.isVerified) return response.status(404).json({ success: false, message: 'Coffee shop tidak ditemukan' })
-    const rating = shop.reviews.length ? shop.reviews.reduce((sum, review) => sum + review.rating, 0) / shop.reviews.length : null
-    return response.json({ success: true, data: { ...shop, rating, reviewCount: shop.reviews.length } })
+    const effective = getEffectiveRating(shop)
+    return response.json({
+      success: true,
+      data: {
+        ...shop,
+        rating: effective.rating,
+        reviewCount: effective.reviewCount,
+        ratingSource: effective.ratingSource,
+        googleReviewCount: effective.googleReviewCount,
+        googleRatingAt: effective.googleRatingAt,
+      },
+    })
   } catch (error) { return next(error) }
 })
 
@@ -372,6 +386,19 @@ coffeeShopRouter.put('/:id/taxonomy', authenticate, authorize('OWNER', 'ADMIN'),
 })
 
 function toCard(shop: Prisma.CoffeeShopGetPayload<{ include: typeof cardInclude }>) {
-  const rating = shop.reviews.length ? shop.reviews.reduce((sum, review) => sum + review.rating, 0) / shop.reviews.length : null
-  return { id: shop.id, name: shop.name, slug: shop.slug, district: shop.district, priceRange: shop.priceRange, isFeatured: shop.isFeatured, status: shop.status, image: shop.images[0]?.imageUrl ?? null, facilities: shop.facilities.map(item => item.facility), rating, reviewCount: shop._count.reviews }
+  const effective = getEffectiveRating(shop)
+  return {
+    id: shop.id,
+    name: shop.name,
+    slug: shop.slug,
+    district: shop.district,
+    priceRange: shop.priceRange,
+    isFeatured: shop.isFeatured,
+    status: shop.status,
+    image: shop.images[0]?.imageUrl ?? null,
+    facilities: shop.facilities.map(item => item.facility),
+    rating: effective.rating,
+    reviewCount: effective.reviewCount,
+    ratingSource: effective.ratingSource,
+  }
 }

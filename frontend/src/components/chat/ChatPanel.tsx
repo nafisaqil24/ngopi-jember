@@ -43,9 +43,9 @@ export default function ChatPanel({ chat, onClose }: { chat: ChatApi; onClose: (
     <div
       role="dialog"
       aria-label="Chat Ngopi Jember"
-      className="fixed inset-2 z-40 flex flex-col overflow-hidden rounded-2xl border border-subtle bg-surface shadow-lg sm:absolute sm:inset-auto sm:bottom-16 sm:right-0 sm:h-[70vh] sm:w-96"
+      className="fixed inset-2 z-40 flex flex-col overflow-hidden rounded-2xl border border-[#E7D5C5] bg-surface shadow-2xl sm:absolute sm:inset-auto sm:bottom-16 sm:right-0 sm:h-[70vh] sm:w-96"
     >
-      <header className="flex items-center justify-between gap-2 border-b border-subtle bg-espresso px-4 py-3 text-cream">
+      <header className="flex items-center justify-between gap-2 border-b-2 border-[#C2410C] bg-espresso px-4 py-3 text-cream">
         <div className="min-w-0">
           <p className="truncate text-sm font-bold">Tanya Ngopi Jember</p>
           <p className="text-[11px] font-medium text-cream/70">Asisten rekomendasi kedai kopi</p>
@@ -54,7 +54,7 @@ export default function ChatPanel({ chat, onClose }: { chat: ChatApi; onClose: (
           <button
             type="button"
             onClick={clear}
-            className="rounded-lg px-2.5 py-1 text-[11px] font-bold text-cream/80 hover:bg-white/10 hover:text-cream"
+            className="rounded-lg px-2.5 py-1 text-[11px] font-bold text-white hover:bg-white/20 hover:text-white"
           >
             Mulai ulang
           </button>
@@ -62,7 +62,7 @@ export default function ChatPanel({ chat, onClose }: { chat: ChatApi; onClose: (
             type="button"
             onClick={onClose}
             aria-label="Tutup chat"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-cream/80 hover:bg-white/10 hover:text-cream"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-white hover:bg-white/20 hover:text-white"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -71,11 +71,19 @@ export default function ChatPanel({ chat, onClose }: { chat: ChatApi; onClose: (
         </div>
       </header>
 
-      <div role="log" aria-live="polite" className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      <div role="log" aria-live="polite" className="flex-1 space-y-3 overflow-y-auto bg-[#FFF7ED] px-4 py-4">
         {messages.length === 0 && (
           <div className="space-y-3">
-            <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-info-soft px-3.5 py-2.5 text-sm font-medium text-body">
-              <span className="whitespace-pre-line">{GREETING}</span>
+            <div className="flex items-start gap-2">
+              <span
+                aria-hidden
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#C2410C] text-[10px] font-bold text-white"
+              >
+                NJ
+              </span>
+              <div className="max-w-[85%] rounded-2xl rounded-tl-sm border border-[#E7D5C5] bg-white px-3.5 py-2.5 text-sm font-medium text-[#1F1A17] shadow-sm">
+                <span className="whitespace-pre-line">{GREETING}</span>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               {SUGGESTIONS.map((suggestion) => (
@@ -83,7 +91,7 @@ export default function ChatPanel({ chat, onClose }: { chat: ChatApi; onClose: (
                   key={suggestion}
                   type="button"
                   onClick={() => void send(suggestion)}
-                  className="rounded-full border border-terracotta/30 bg-accent-soft px-3 py-1.5 text-xs font-semibold text-terracotta-strong transition hover:bg-terracotta hover:text-white"
+                  className="rounded-full border-[1.5px] border-[#C2410C] bg-white px-3 py-1.5 text-xs font-medium text-[#C2410C] transition duration-200 hover:bg-[#C2410C] hover:text-white"
                 >
                   {suggestion}
                 </button>
@@ -94,15 +102,23 @@ export default function ChatPanel({ chat, onClose }: { chat: ChatApi; onClose: (
 
         {messages.map((message, index) => (
           <div key={index} className="space-y-2">
-            <div
-              className={
-                message.role === 'user'
-                  ? 'ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-terracotta px-3.5 py-2.5 text-sm font-medium text-white'
-                  : 'max-w-[85%] rounded-2xl rounded-tl-sm bg-info-soft px-3.5 py-2.5 text-sm font-medium text-body'
-              }
-            >
-              <span className="whitespace-pre-line">{message.content}</span>
-            </div>
+            {message.role === 'user' ? (
+              <div className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#C2410C] px-3.5 py-2.5 text-sm font-medium text-white">
+                <span className="whitespace-pre-line">{message.content}</span>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2">
+                <span
+                  aria-hidden
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#C2410C] text-[10px] font-bold text-white"
+                >
+                  NJ
+                </span>
+                <div className="max-w-[85%] rounded-2xl rounded-tl-sm border border-[#E7D5C5] bg-white px-3.5 py-2.5 text-sm font-medium text-[#1F1A17] shadow-sm">
+                  <span className="whitespace-pre-line">{message.content}</span>
+                </div>
+              </div>
+            )}
 
             {message.role === 'assistant' && message.shops && message.shops.length > 0 && (
               <div className="space-y-2">
@@ -200,20 +216,20 @@ export default function ChatPanel({ chat, onClose }: { chat: ChatApi; onClose: (
                 submit()
               }
             }}
-            className="max-h-28 min-h-[42px] flex-1 resize-none rounded-xl border border-strong bg-surface px-3 py-2.5 text-sm font-medium text-heading outline-none placeholder:text-muted focus:border-terracotta"
+            className="max-h-28 min-h-[42px] flex-1 resize-none rounded-xl border border-[#D6D3D1] bg-surface px-3 py-2.5 text-sm font-medium text-heading outline-none placeholder:text-[#78716C] focus:border-[#C2410C] focus:ring-2 focus:ring-[#C2410C]/30"
           />
           <button
             type="submit"
             aria-label="Kirim pesan"
             disabled={!canSend}
-            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl bg-terracotta text-white shadow-sm transition hover:bg-terracotta-strong disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl bg-[#C2410C] text-white shadow-sm transition hover:bg-[#9A3412] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 6l6 6-6 6" />
             </svg>
           </button>
         </div>
-        <p className="mt-1 text-right font-mono text-[11px] font-medium text-muted">
+        <p className="mt-1 text-right font-mono text-xs font-medium text-[#78716C]">
           {value.length}/{CHAT_MAX_MESSAGE_LENGTH}
         </p>
       </form>

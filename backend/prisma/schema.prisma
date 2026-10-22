@@ -37,6 +37,9 @@ model CoffeeShop {
   status          CoffeeShopStatus     @default(OPEN)
   isVerified      Boolean              @default(false)
   isFeatured      Boolean              @default(false)
+  googleRating    Float?
+  googleReviewCount Int?
+  googleRatingAt  DateTime?
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
   analyticsEvents AnalyticsEvent[]

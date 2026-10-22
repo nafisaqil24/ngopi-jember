@@ -26,6 +26,7 @@ export type ApiCoffeeShopCard = {
   facilities: ApiFacility[];
   rating: number | null;
   reviewCount: number;
+  ratingSource?: "google" | "ulasan" | null;
 };
 
 export type ApiCoffeeShopDetail = Omit<ApiCoffeeShopCard, "facilities"> & {
@@ -40,6 +41,8 @@ export type ApiCoffeeShopDetail = Omit<ApiCoffeeShopCard, "facilities"> & {
   isVerified: boolean;
   createdAt: string;
   updatedAt: string;
+  googleReviewCount?: number | null;
+  googleRatingAt?: string | null;
   categories: { category: { id: string; name: string; slug: string } }[];
   facilities: { facility: ApiFacility }[];
   menus: { id: string; name: string; category?: string | null; description: string | null; price: number; image: string | null }[];
