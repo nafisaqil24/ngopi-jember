@@ -21,7 +21,7 @@ export default function NotFound({ shop = false }: { shop?: boolean }) {
         </p>
         <Link
           to={shop ? "/coffee-shops" : "/"}
-          className="mt-6 rounded-xl bg-espresso px-5 py-3 font-bold text-cream shadow-md hover:bg-espresso/90 transition"
+          className="mt-6 rounded-[4px] bg-espresso px-5 py-3 font-bold text-cream shadow-md hover:bg-espresso/90 transition"
         >
           {shop ? "Kembali menjelajah" : "Kembali ke beranda"}
         </Link>

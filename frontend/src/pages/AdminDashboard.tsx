@@ -179,7 +179,7 @@ export default function AdminDashboard() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShopFilter("pending")}
-                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                  className={`rounded-[4px] px-3.5 py-1.5 text-xs font-semibold transition ${
                     shopFilter === "pending"
                       ? "bg-warning text-white shadow-sm"
                       : "bg-info-soft text-body hover:bg-subtle"
@@ -189,7 +189,7 @@ export default function AdminDashboard() {
                 </button>
                 <button
                   onClick={() => setShopFilter("all")}
-                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                  className={`rounded-[4px] px-3.5 py-1.5 text-xs font-semibold transition ${
                     shopFilter === "all"
                       ? "bg-terracotta text-white shadow-sm"
                       : "bg-info-soft text-body hover:bg-subtle"
@@ -263,7 +263,7 @@ export default function AdminDashboard() {
                              <div className="flex items-center justify-end gap-2">
                                 <Link
                                   to={`/admin/coffee-shops/${shop.id}/edit`}
-                                  className="rounded-lg border border-strong bg-white px-3 py-1.5 text-xs font-semibold text-body transition hover:bg-info-soft"
+                                  className="rounded-[4px] border border-strong bg-white px-3 py-1.5 text-xs font-semibold text-body transition hover:bg-info-soft"
                                 >
                                   Edit
                                 </Link>

@@ -560,7 +560,7 @@ export default function OwnerDashboard() {
                   type="file"
                   accept="image/*"
                   onChange={(e) => setShopImage(e.target.files?.[0] || null)}
-                  className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-terracotta file:text-white hover:file:bg-terracotta/90"
+                  className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-[4px] file:border-0 file:text-xs file:font-bold file:bg-terracotta file:text-white hover:file:bg-terracotta/90"
                 />
               </div>
               <div className="sm:col-span-2 pt-2">
@@ -839,7 +839,7 @@ export default function OwnerDashboard() {
                         type="file"
                         accept="image/*"
                         onChange={(e) => setEditShopImage(e.target.files?.[0] || null)}
-                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-terracotta file:text-white hover:file:bg-terracotta/90"
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-[4px] file:border-0 file:text-xs file:font-bold file:bg-terracotta file:text-white hover:file:bg-terracotta/90"
                       />
                     </div>
                   </div>
@@ -1001,7 +1001,7 @@ export default function OwnerDashboard() {
                         type="file"
                         accept="image/*"
                         onChange={(e) => setMenuImage(e.target.files?.[0] || null)}
-                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-terracotta file:text-white hover:file:bg-terracotta/90"
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-[4px] file:border-0 file:text-xs file:font-bold file:bg-terracotta file:text-white hover:file:bg-terracotta/90"
                       />
                     </div>
                   </div>
@@ -1074,7 +1074,7 @@ export default function OwnerDashboard() {
                                 type="file"
                                 accept="image/*"
                                 onChange={(e) => setEditMenuImage(e.target.files?.[0] || null)}
-                                className="w-full sm:col-span-2 rounded-lg border border-espresso/15 bg-white px-3 py-2 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-terracotta file:text-white hover:file:bg-terracotta/90"
+                                className="w-full sm:col-span-2 rounded-lg border border-espresso/15 bg-white px-3 py-2 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-[4px] file:border-0 file:text-xs file:font-bold file:bg-terracotta file:text-white hover:file:bg-terracotta/90"
                               />
                             </div>
                             <div className="flex justify-end gap-2">

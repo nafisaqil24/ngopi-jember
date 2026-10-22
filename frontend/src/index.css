@@ -188,7 +188,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: var(--radius-pill);
+  border-radius: 4px;
   font-weight: 700;
   font-size: 0.875rem;
   line-height: 1;
@@ -278,17 +278,20 @@ body {
 
 /* =========================================================================
    RADIUS SERAGAM
-   Card = 4px; button & input = 6px. Pengecualian: elemen pill / ikon bulat
-   (utility `rounded-full`) dan tombol primitif pill (.btn-pill) tetap bulat.
-   Diletakkan unlayered agar menang atas utility rounded-*.
+   Card, button, input, select, dan textarea = 4px. Pengecualian: elemen bulat
+   (utility `rounded-full`) seperti avatar/logo, chip fasilitas, badge status,
+   ikon bulat kecil, dan pill indikator tetap bulat. Diletakkan unlayered agar
+   menang atas utility rounded-*.
    ========================================================================= */
 .card-surface {
   border-radius: 4px;
 }
 
 button:not(.rounded-full):not(.btn-pill),
-input:not(.rounded-full) {
-  border-radius: 6px;
+input:not(.rounded-full),
+select,
+textarea {
+  border-radius: 4px;
 }
 
 /* Animated gradient border glow (featured) */

@@ -43,7 +43,7 @@ function Section({
   tinted?: boolean;
 }) {
   return (
-    <section className={`mt-16 px-5 py-12 ${tinted ? "bg-white" : ""}`}>
+    <section className={`mt-20 lg:mt-24 px-5 py-12 ${tinted ? "bg-white" : ""}`}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -95,42 +95,39 @@ function Section({
 function CTA() {
   return (
     <>
-      <motion.section
-        initial={{ opacity: 0, scale: 0.95 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-        className="relative overflow-hidden mx-5 mt-16 rounded-3xl bg-gradient-to-r from-terracotta to-terracotta-strong px-6 py-12 text-center text-white sm:mx-auto sm:max-w-7xl shadow-xl"
-      >
+      <section className="mt-12 mb-12 px-5">
         <motion.div
-          className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-2xl pointer-events-none"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <h2 className="text-3xl font-black text-white">Sudah tahu mau ngopi di mana?</h2>
-        <p className="mt-3 text-white/90">
-          Jelajahi lebih banyak pilihan berdasarkan lokasi, harga, dan fasilitas.
-        </p>
-        <motion.div
-          whileHover={{ scale: 1.05, y: -2 }}
-          whileTap={{ scale: 0.95 }}
-          className="inline-block mt-6"
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="mx-auto max-w-7xl relative overflow-hidden rounded-[4px] bg-terracotta px-6 py-8 text-center text-white shadow-sm lg:py-10"
         >
-          <Link
-            to="/coffee-shops"
-            className="group inline-flex items-center gap-2.5 rounded-xl bg-white px-7 py-4 font-bold text-terracotta-strong shadow-xl hover:bg-cream transition-all duration-300 ring-2 ring-white/50 hover:ring-white"
+          <h2 className="text-2xl font-black text-white lg:text-3xl">Sudah tahu mau ngopi di mana?</h2>
+          <p className="mt-2 text-white/90">
+            Jelajahi lebih banyak pilihan berdasarkan lokasi, harga, dan fasilitas.
+          </p>
+          <motion.div
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            className="mt-5 inline-block"
           >
-            <span>Jelajahi coffee shop</span>
-            <motion.span
-              className="inline-block text-lg"
-              animate={{ x: [0, 6, 0] }}
-              transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+            <Link
+              to="/coffee-shops"
+              className="group inline-flex items-center gap-2 rounded-[4px] bg-white px-5 py-2.5 text-sm font-bold text-terracotta-strong shadow-none hover:bg-cream transition-all duration-300 ring-2 ring-white/50 hover:ring-white"
             >
-              →
-            </motion.span>
-          </Link>
+              <span>Jelajahi coffee shop</span>
+              <motion.span
+                className="inline-block text-lg"
+                animate={{ x: [0, 6, 0] }}
+                transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+              >
+                →
+              </motion.span>
+            </Link>
+          </motion.div>
         </motion.div>
-      </motion.section>
+      </section>
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -150,7 +147,7 @@ function CTA() {
         >
           <Link
             to="/register"
-            className="group inline-flex items-center gap-2.5 rounded-xl border-2 border-terracotta bg-accent-soft/60 px-7 py-4 font-bold text-terracotta-strong shadow-sm hover:bg-terracotta hover:text-white transition-all duration-300"
+            className="group inline-flex items-center gap-2.5 rounded-[4px] border-2 border-terracotta bg-accent-soft/60 px-7 py-4 font-bold text-terracotta-strong shadow-sm hover:bg-terracotta hover:text-white transition-all duration-300"
           >
             <motion.span
               className="inline-block"
@@ -215,13 +212,13 @@ export default function Home() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative overflow-hidden px-5 py-20 text-center sm:py-28"
+        className="relative overflow-hidden px-5 pb-20 pt-20 text-center sm:pb-28 sm:pt-15"
       >
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,#f6ddc9,transparent_45%)]" />
-        <p className="font-mono text-xs font-semibold tracking-widest text-terracotta-strong bg-accent-soft px-3 py-1.5 rounded-lg border border-terracotta/20 inline-block mb-3 shadow-xs">
-          SYSTEM // COFFEE DIRECTORY & CURATION
+        <p className="text-xs font-semibold tracking-widest text-terracotta-strong bg-accent-soft px-3 py-1.5 rounded-lg border border-terracotta/20 inline-block mb-3 shadow-xs">
+          Direktori &amp; kurasi kopi Jember
         </p>
-        <h1 className="mx-auto mt-4 max-w-4xl text-4xl font-black leading-tight text-heading sm:text-6xl">
+        <h1 className="mx-auto mt-4 max-w-4xl text-5xl font-black leading-tight text-heading sm:text-7xl">
           Temukan Tempat Ngopi Favoritmu di Jember
         </h1>
         <p className="mx-auto mt-5 max-w-2xl leading-7 text-body font-medium">
@@ -230,7 +227,7 @@ export default function Home() {
         </p>
         <form
           onSubmit={handleSearch}
-          className="mx-auto mt-8 flex max-w-2xl rounded-2xl bg-white p-2 shadow-lg ring-1 ring-subtle"
+          className="mx-auto mt-8 flex max-w-2xl rounded-[4px] bg-white p-2 shadow-lg ring-1 ring-subtle"
         >
           <input
             aria-label="Cari coffee shop"

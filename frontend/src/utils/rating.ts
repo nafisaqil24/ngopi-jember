@@ -14,5 +14,5 @@ export function formatGoogleRatingLabel(
   });
   const countText =
     reviewCount !== null && reviewCount !== undefined ? ` (${reviewCount} ulasan)` : "";
-  return `Rating Google Maps, per ${formatted}${countText}`;
+  return `Rating per ${formatted}${countText}`;
 }

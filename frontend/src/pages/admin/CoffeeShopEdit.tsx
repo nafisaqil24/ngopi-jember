@@ -315,7 +315,7 @@ export default function AdminCoffeeShopEdit() {
           </div>
           <Link
             to="/admin/dashboard"
-            className="rounded-xl border border-strong bg-white px-4 py-2.5 text-sm font-bold text-body shadow-xs transition hover:bg-info-soft"
+            className="rounded-[4px] border border-strong bg-white px-4 py-2.5 text-sm font-bold text-body shadow-xs transition hover:bg-info-soft"
           >
             ← Kembali ke Dashboard Admin
           </Link>
@@ -533,7 +533,7 @@ export default function AdminCoffeeShopEdit() {
                     type="file"
                     accept="image/*"
                     onChange={(e) => setImage(e.target.files?.[0] || null)}
-                    className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-terracotta file:px-3 file:py-1 file:text-xs file:font-bold file:text-white hover:file:bg-terracotta-strong"
+                    className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm file:mr-4 file:rounded-[4px] file:border-0 file:bg-terracotta file:px-3 file:py-1 file:text-xs file:font-bold file:text-white hover:file:bg-terracotta-strong"
                   />
                   {shop.images?.[0]?.imageUrl && (
                     <img
@@ -547,7 +547,7 @@ export default function AdminCoffeeShopEdit() {
                 <div className="flex justify-end gap-2 pt-2 sm:col-span-2">
                   <Link
                     to="/admin/dashboard"
-                    className="rounded-xl border border-espresso/15 px-4 py-2 text-sm font-bold text-espresso hover:bg-espresso/5"
+                    className="rounded-[4px] border border-espresso/15 px-4 py-2 text-sm font-bold text-espresso hover:bg-espresso/5"
                   >
                     Batal
                   </Link>
@@ -636,7 +636,7 @@ export default function AdminCoffeeShopEdit() {
                         type="file"
                         accept="image/*"
                         onChange={(e) => setMenuImage(e.target.files?.[0] || null)}
-                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-terracotta file:px-3 file:py-1 file:text-xs file:font-bold file:text-white hover:file:bg-terracotta-strong"
+                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm file:mr-4 file:rounded-[4px] file:border-0 file:bg-terracotta file:px-3 file:py-1 file:text-xs file:font-bold file:text-white hover:file:bg-terracotta-strong"
                       />
                     </div>
                   </div>
@@ -708,7 +708,7 @@ export default function AdminCoffeeShopEdit() {
                                 type="file"
                                 accept="image/*"
                                 onChange={(e) => setEditMenuImage(e.target.files?.[0] || null)}
-                                className="w-full rounded-lg border border-espresso/15 bg-white px-3 py-2 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-terracotta file:px-3 file:py-1 file:text-xs file:font-bold file:text-white hover:file:bg-terracotta-strong sm:col-span-2"
+                                className="w-full rounded-lg border border-espresso/15 bg-white px-3 py-2 text-sm file:mr-4 file:rounded-[4px] file:border-0 file:bg-terracotta file:px-3 file:py-1 file:text-xs file:font-bold file:text-white hover:file:bg-terracotta-strong sm:col-span-2"
                               />
                             </div>
                             <div className="flex justify-end gap-2">

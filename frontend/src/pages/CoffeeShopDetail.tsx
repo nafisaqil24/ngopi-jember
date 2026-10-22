@@ -235,7 +235,7 @@ export default function CoffeeShopDetail() {
               </span>
             )}
 
-            <h1 className="mt-2 text-3xl font-black text-heading">{shop.name}</h1>
+            <h1 className="mt-2 text-4xl font-black break-words text-heading">{shop.name}</h1>
 
             <p className="mt-2 flex items-start gap-1.5 text-sm font-medium text-body">
               <IconPin className="mt-0.5 h-4 w-4 shrink-0 text-terracotta" />
@@ -404,7 +404,7 @@ export default function CoffeeShopDetail() {
                           )}
                         </div>
                       </div>
-                      <div className="font-bold text-terracotta shrink-0">
+                      <div className="font-semibold tabular-nums text-terracotta shrink-0">
                         Rp{item.price.toLocaleString("id-ID")}
                       </div>
                     </motion.div>
@@ -414,9 +414,9 @@ export default function CoffeeShopDetail() {
             </Block>
 
             <Block title={`Ulasan & Rating (${shop.reviews.length})`}>
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {user ? (
-                  <form onSubmit={handleReviewSubmit} className={`rounded-2xl bg-white p-6 shadow-sm ring-1 ring-subtle space-y-4 ${isShaking ? "animate-shake" : ""}`}>
+                  <form onSubmit={handleReviewSubmit} className={`rounded-2xl bg-white p-8 shadow-sm ring-1 ring-subtle space-y-4 ${isShaking ? "animate-shake" : ""}`}>
                     <h3 className="font-black text-lg text-heading">Tulis Ulasan Kamu</h3>
                     {reviewError && <p className="text-sm text-danger font-bold">{reviewError}</p>}
                     {reviewSuccess && (

@@ -79,7 +79,7 @@ export default function GoogleRatingPanel({
   return (
     <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-espresso/10">
       <div className="mb-5">
-        <h3 className="text-xl font-black">Rating Google Maps</h3>
+        <h3 className="text-xl font-black">Rating</h3>
         <p className="text-sm text-espresso/65">
           Atur rating dari Google Maps yang akan ditampilkan untuk kedai ini. Hanya admin yang dapat mengubahnya.
         </p>
