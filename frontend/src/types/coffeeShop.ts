@@ -19,5 +19,6 @@ export interface CoffeeShop {
   imageUrl: string;
   isFeatured: boolean;
   isOpenNow: boolean;
+  openStatus?: "buka" | "tutup" | "tidak_diketahui";
   distance?: number;
 }

@@ -39,18 +39,24 @@
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-info-soft: var(--info-soft);
+
+  /* Card listing kedai (kontras terhadap background) */
+  --color-card-bg: var(--card-bg);
+  --color-card-border: var(--card-border);
+  --shadow-card: var(--card-shadow);
+  --shadow-card-hover: var(--card-shadow-hover);
 }
 
 :root {
-  /* Brand palette (dipertahankan) */
+  /* Brand palette (diselaraskan dengan desain.md) */
   --espresso: #1c1917;
-  --cream: #faf8f5;
+  --cream: #faf7f2;
   --terracotta: #c2410c;
   --terracotta-strong: #9a3412;
   --terracotta-soft: #fdf1e7;
 
   /* Surfaces */
-  --canvas: #faf8f5;
+  --canvas: #faf7f2;
   --surface: #ffffff;
   --surface-hover: #fdf6ee;
 
@@ -72,6 +78,12 @@
   --warning: #d97706;
   --warning-soft: #fef3c7;
   --info-soft: #f5f5f4;
+
+  /* Card listing kedai (kontras terhadap background) */
+  --card-bg: #fff8f0;
+  --card-border: #e8d5c0;
+  --card-shadow: 0 2px 10px rgba(60, 30, 10, 0.10);
+  --card-shadow-hover: 0 6px 18px rgba(60, 30, 10, 0.16);
 
   /* Radius scale */
   --radius-sm: 8px;
@@ -163,6 +175,120 @@ body {
 }
 .link-underline:hover::after {
   width: 100%;
+}
+
+/* ------------------------- Design-system primitives (desain.md) ---------- */
+/* Tombol pill: solid (aksen terracotta) & outline. Dipakai ulang di
+   Navbar dan halaman lain agar tidak mengulang nilai warna/radius.
+   Diletakkan di @layer components supaya util Tailwind tetap bisa
+   menimpa (mis. text-xs, w-full). */
+@layer components {
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: 0.875rem;
+  line-height: 1;
+  padding: 0.7rem 1.2rem;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease,
+              border-color 0.2s ease, transform 0.2s ease;
+}
+.btn-pill:active {
+  transform: scale(0.97);
+}
+
+.btn-pill-solid {
+  background-color: var(--terracotta);
+  color: #fff;
+  border: 1px solid var(--terracotta);
+}
+.btn-pill-solid:hover {
+  background-color: var(--terracotta-strong);
+  border-color: var(--terracotta-strong);
+}
+
+.btn-pill-outline {
+  background-color: transparent;
+  color: var(--terracotta);
+  border: 1px solid var(--terracotta);
+}
+.btn-pill-outline:hover {
+  background-color: var(--terracotta-soft);
+}
+
+/* Chip fasilitas: pill abu-krem, tinggi seragam, ikon aksen di kiri. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--surface-hover);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+}
+.chip-icon {
+  color: var(--terracotta);
+  font-weight: 700;
+}
+
+/* Badge status operasional (buka/tutup) */
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+}
+.badge-status--open {
+  background-color: var(--success-soft);
+  color: var(--success);
+}
+.badge-status--closed {
+  background-color: var(--danger-soft);
+  color: var(--danger);
+}
+.badge-status--unknown {
+  background-color: var(--info-soft);
+  color: var(--text-muted);
+}
+.badge-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-pill);
+  background-color: currentColor;
+}
+
+/* Kartu dasar (putih, bayangan lembut). Radius diatur terpisah di bawah
+   (unlayered) agar menang atas utility rounded-* dan seragam 6px. */
+.card-surface {
+  background-color: var(--surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+}
+
+/* =========================================================================
+   RADIUS SERAGAM
+   Card = 4px; button & input = 6px. Pengecualian: elemen pill / ikon bulat
+   (utility `rounded-full`) dan tombol primitif pill (.btn-pill) tetap bulat.
+   Diletakkan unlayered agar menang atas utility rounded-*.
+   ========================================================================= */
+.card-surface {
+  border-radius: 4px;
+}
+
+button:not(.rounded-full):not(.btn-pill),
+input:not(.rounded-full) {
+  border-radius: 6px;
 }
 
 /* Animated gradient border glow (featured) */

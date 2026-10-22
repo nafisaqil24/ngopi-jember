@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
 import CoffeeShopCard from "../components/coffeeshop/CoffeeShopCard";
 import { listCoffeeShops, listFacilities, listNearbyCoffeeShops, getImageUrl, ApiError, type ApiCoffeeShopCard, type ApiFacility, type NearbyCoffeeShop } from "../services/coffeeShop";
+import { getEffectiveOpenStatus } from "../utils/openStatus";
 import type { CoffeeShop } from "../types/coffeeShop";
 
 const JEMBER_DISTRICTS = [
@@ -21,6 +22,7 @@ const JEMBER_DISTRICT_COORDS: Record<string, { lat: number; lng: number }> = {
 };
 
 function mapToCoffeeShop(item: ApiCoffeeShopCard): CoffeeShop {
+  const openStatus = getEffectiveOpenStatus(item.openingHours, item.status);
   return {
     id: item.id,
     slug: item.slug,
@@ -34,11 +36,13 @@ function mapToCoffeeShop(item: ApiCoffeeShopCard): CoffeeShop {
     facilities: item.facilities.map((facility) => facility.name),
     imageUrl: getImageUrl(item.image) ?? "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=85",
     isFeatured: item.isFeatured,
-    isOpenNow: item.status === "OPEN",
+    isOpenNow: openStatus === "buka",
+    openStatus,
   };
 }
 
 function mapNearbyToCoffeeShop(item: NearbyCoffeeShop): CoffeeShop {
+  const openStatus = getEffectiveOpenStatus(item.openingHours, item.status);
   return {
     id: item.id,
     slug: item.slug,
@@ -52,7 +56,8 @@ function mapNearbyToCoffeeShop(item: NearbyCoffeeShop): CoffeeShop {
     facilities: item.facilities.map((facility) => facility.name),
     imageUrl: getImageUrl(item.image) ?? "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=85",
     isFeatured: item.isFeatured,
-    isOpenNow: item.status === "OPEN",
+    isOpenNow: openStatus === "buka",
+    openStatus,
     distance: item.distance,
   };
 }

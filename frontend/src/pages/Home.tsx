@@ -4,9 +4,11 @@ import { motion } from "framer-motion";
 import MainLayout from "../layouts/MainLayout";
 import CoffeeShopCard from "../components/coffeeshop/CoffeeShopCard";
 import { listCoffeeShops, getImageUrl, ApiError, type ApiCoffeeShopCard } from "../services/coffeeShop";
+import { getEffectiveOpenStatus } from "../utils/openStatus";
 import type { CoffeeShop } from "../types/coffeeShop";
 
 function mapToCoffeeShop(item: ApiCoffeeShopCard): CoffeeShop {
+  const openStatus = getEffectiveOpenStatus(item.openingHours, item.status);
   return {
     id: item.id,
     slug: item.slug,
@@ -20,7 +22,8 @@ function mapToCoffeeShop(item: ApiCoffeeShopCard): CoffeeShop {
     facilities: item.facilities.map((facility) => facility.name),
     imageUrl: getImageUrl(item.image) ?? "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=85",
     isFeatured: item.isFeatured,
-    isOpenNow: item.status === "OPEN",
+    isOpenNow: openStatus === "buka",
+    openStatus,
   };
 }
 

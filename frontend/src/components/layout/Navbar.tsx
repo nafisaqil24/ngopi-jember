@@ -33,13 +33,13 @@ export default function Navbar() {
     <header
       className={`sticky top-0 z-40 transition-all duration-300 ${
         isScrolled
-          ? "border-b border-subtle bg-white/95 py-2.5 shadow-sm backdrop-blur-md"
-          : "border-b border-subtle bg-white/90 py-3.5 backdrop-blur-xl"
+          ? "border-b border-subtle bg-cream/95 py-2.5 shadow-sm backdrop-blur-md"
+          : "border-b border-subtle bg-cream/90 py-3.5 backdrop-blur-xl"
       }`}
     >
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-3 group transition-transform hover:scale-105">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-espresso text-cream font-mono text-sm font-bold shadow-sm ring-1 ring-espresso/20">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-espresso text-cream font-mono text-sm font-bold shadow-sm ring-1 ring-espresso/20">
             NJ
           </div>
           <div className="flex flex-col">
@@ -57,8 +57,11 @@ export default function Navbar() {
               <Link
                 key={link.to}
                 to={link.to}
-                className={`link-underline text-sm font-semibold transition hover:text-terracotta px-3 py-1.5 rounded-lg ${
-                  isActive ? "bg-accent-soft text-terracotta font-bold" : "text-heading"
+                aria-current={isActive ? "page" : undefined}
+                className={`text-sm font-semibold transition px-3 py-1.5 border-b-2 ${
+                  isActive
+                    ? "text-terracotta font-bold border-terracotta"
+                    : "text-heading border-transparent hover:text-terracotta"
                 }`}
               >
                 {link.label}
@@ -68,14 +71,14 @@ export default function Navbar() {
 
           {user ? (
             <div className="flex items-center gap-3 pl-2 border-l border-subtle">
-              <span className="font-mono text-xs text-body bg-info-soft border border-subtle px-3 py-1.5 rounded-lg shadow-xs flex items-center gap-1.5">
+              <span className="font-mono text-xs text-body bg-info-soft border border-subtle px-3 py-1.5 rounded-full shadow-xs flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-success animate-pulse"></span>
                 usr: {user.name}
               </span>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="rounded-xl border border-strong bg-white px-3.5 py-2 text-xs font-bold text-heading hover:bg-info-soft hover:scale-105 active:scale-95 transition shadow-xs"
+                className="btn-pill btn-pill-outline text-xs"
               >
                 Keluar
               </button>
@@ -84,13 +87,13 @@ export default function Navbar() {
             <div className="flex items-center gap-3 pl-2 border-l border-subtle">
               <Link
                 to="/login"
-                className="link-underline text-sm font-semibold text-heading transition hover:text-terracotta px-3 py-1.5 rounded-lg"
+                className="text-sm font-semibold text-heading transition hover:text-terracotta px-3 py-1.5"
               >
                 Masuk
               </Link>
               <Link
                 to="/register"
-                className="rounded-xl bg-terracotta px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:bg-terracotta-strong hover:scale-105 active:scale-95"
+                className="btn-pill btn-pill-solid"
               >
                 + Daftar Akun
               </Link>
@@ -149,7 +152,7 @@ export default function Navbar() {
 
             {user ? (
               <div className="flex flex-col gap-2 pt-2 border-t border-subtle">
-                <div className="font-mono text-xs text-body bg-info-soft border border-subtle px-3 py-2 rounded-xl flex items-center gap-2">
+                <div className="font-mono text-xs text-body bg-info-soft border border-subtle px-3 py-2 rounded-full flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-success"></span>
                   usr: {user.name}
                 </div>
@@ -159,7 +162,7 @@ export default function Navbar() {
                     setIsOpen(false);
                     handleLogout();
                   }}
-                  className="rounded-xl border border-strong bg-white px-3.5 py-2.5 text-left text-sm font-bold text-heading hover:bg-info-soft transition"
+                  className="btn-pill btn-pill-outline w-full"
                 >
                   Keluar
                 </button>
@@ -177,7 +180,7 @@ export default function Navbar() {
             <Link
               to="/register"
               onClick={() => setIsOpen(false)}
-              className="mt-1 rounded-xl bg-terracotta px-4 py-3 text-center text-sm font-semibold text-white shadow-md hover:bg-terracotta-strong transition"
+              className="btn-pill btn-pill-solid w-full mt-1"
             >
               + Daftarkan Kedai
             </Link>

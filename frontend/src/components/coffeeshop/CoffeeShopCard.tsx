@@ -14,22 +14,40 @@ export default function CoffeeShopCard({ coffeeShop, index = 0 }: CoffeeShopCard
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.4, delay: index * 0.08, ease: "easeOut" }}
-      className={`relative rounded-2xl ${coffeeShop.isFeatured ? "p-[2px] animated-gradient-border shadow-lg" : ""}`}
+      className={`relative rounded-[4px] ${coffeeShop.isFeatured ? "p-[2px] animated-gradient-border shadow-lg" : ""}`}
     >
       <Link
         to={`/coffee-shops/${coffeeShop.slug}`}
-        className="card-elevation group flex flex-col overflow-hidden rounded-2xl border border-subtle bg-white transition-all duration-300 hover:border-terracotta h-full"
+        className="group flex flex-col overflow-hidden rounded-[4px] border border-card-border bg-card-bg shadow-card hover:shadow-card-hover transition-shadow duration-200 h-full"
       >
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-info-soft">
           <img
             src={coffeeShop.imageUrl}
             alt={coffeeShop.name}
             loading="lazy"
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            className="h-full w-full rounded-t-[4px] object-cover transition duration-300 group-hover:scale-105"
           />
           {coffeeShop.isFeatured && (
             <span className="absolute left-3 top-3 rounded-full bg-terracotta px-3 py-1 font-mono text-[11px] font-bold text-white shadow-md tracking-wider uppercase">
               Featured
+            </span>
+          )}
+          {coffeeShop.openStatus && (
+            <span
+              className={`badge-status absolute bottom-3 left-3 ${
+                coffeeShop.openStatus === "buka"
+                  ? "badge-status--open"
+                  : coffeeShop.openStatus === "tutup"
+                  ? "badge-status--closed"
+                  : "badge-status--unknown"
+              }`}
+            >
+              <span className="badge-dot" />
+              {coffeeShop.openStatus === "buka"
+                ? "Buka"
+                : coffeeShop.openStatus === "tutup"
+                ? "Tutup"
+                : "Jam belum pasti"}
             </span>
           )}
         </div>
@@ -61,10 +79,7 @@ export default function CoffeeShopCard({ coffeeShop, index = 0 }: CoffeeShopCard
 
           <div className="mt-1 flex flex-wrap gap-1.5">
             {coffeeShop.facilities.slice(0, 3).map((facility) => (
-              <span
-                key={facility}
-                className="rounded-full bg-info-soft px-2.5 py-1 text-xs font-semibold text-body"
-              >
+              <span key={facility} className="chip text-xs bg-white border-card-border">
                 {facility}
               </span>
             ))}

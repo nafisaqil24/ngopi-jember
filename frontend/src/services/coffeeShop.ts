@@ -22,6 +22,7 @@ export type ApiCoffeeShopCard = {
   priceRange: string;
   isFeatured: boolean;
   status: "OPEN" | "CLOSED" | "TEMPORARILY_CLOSED";
+  openingHours?: string;
   image: string | null;
   facilities: ApiFacility[];
   rating: number | null;

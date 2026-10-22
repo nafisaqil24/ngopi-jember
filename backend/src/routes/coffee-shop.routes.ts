@@ -395,6 +395,7 @@ function toCard(shop: Prisma.CoffeeShopGetPayload<{ include: typeof cardInclude 
     priceRange: shop.priceRange,
     isFeatured: shop.isFeatured,
     status: shop.status,
+    openingHours: shop.openingHours,
     image: shop.images[0]?.imageUrl ?? null,
     facilities: shop.facilities.map(item => item.facility),
     rating: effective.rating,
