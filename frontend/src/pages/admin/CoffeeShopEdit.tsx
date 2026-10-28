@@ -138,7 +138,7 @@ export default function AdminCoffeeShopEdit() {
           setLongitude(String(loc.lng));
           toast.info(`Alamat ditemukan: ${loc.display_name}`);
         } else {
-          toast.error("Alamat tidak ditemukan.");
+          toast.error("Alamat tidak ditemukan. Cari kata kunci lain, gunakan GPS, atau isi koordinat manual.");
         }
       })
       .catch(() => toast.error("Gagal mencari alamat."));
@@ -163,6 +163,12 @@ export default function AdminCoffeeShopEdit() {
   async function handleSave(e: FormEvent) {
     e.preventDefault();
     if (!shop || !token) return;
+    if (!latitude.trim() || !longitude.trim()) {
+      const message = "Lokasi wajib ditentukan. Cari alamat, gunakan GPS, atau klik titik pada peta terlebih dahulu.";
+      setSaveError(message);
+      toast.error(message);
+      return;
+    }
     setSaving(true);
     setSaveError("");
 

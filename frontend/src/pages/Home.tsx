@@ -43,7 +43,7 @@ function Section({
   tinted?: boolean;
 }) {
   return (
-    <section className={`mt-20 lg:mt-24 px-5 py-12 ${tinted ? "bg-white" : ""}`}>
+    <section className={`mt-20 lg:mt-24 px-5 py-12 ${tinted ? "bg-transparent" : ""}`}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -65,7 +65,7 @@ function Section({
         </div>
 
         {loading && (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[1, 2, 3].map((n) => (
               <div key={n} className="h-80 rounded-2xl skeleton" />
             ))}
@@ -81,11 +81,19 @@ function Section({
         )}
 
         {!loading && !error && shops.length > 0 && (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {shops.map((shop, index) => (
-              <CoffeeShopCard key={shop.id} coffeeShop={shop} index={index} />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {shops.map((shop, index) => (
+                <CoffeeShopCard key={shop.id} coffeeShop={shop} index={index} />
+              ))}
+            </div>
+            <Link
+              to="/coffee-shops"
+              className="mt-6 block rounded-xl border border-terracotta/30 bg-white/70 py-3 text-center font-mono text-xs font-bold text-terracotta-strong transition hover:bg-accent-soft sm:hidden"
+            >
+              Lihat semua →
+            </Link>
+          </>
         )}
       </motion.div>
     </section>
@@ -183,19 +191,19 @@ export default function Home() {
 
   useEffect(() => {
     // 1. Popular (sort=popular)
-    listCoffeeShops({ sort: "popular", limit: 3 })
+    listCoffeeShops({ sort: "popular", limit: 4 })
       .then((res) => setPopularShops(res.data.map(mapToCoffeeShop)))
       .catch((err) => setErrorPopular(err instanceof ApiError ? err.message : "Gagal memuat data populer"))
       .finally(() => setLoadingPopular(false));
 
     // 2. Featured (featured=true)
-    listCoffeeShops({ featured: "true", limit: 3 })
+    listCoffeeShops({ featured: "true", limit: 4 })
       .then((res) => setFeaturedShops(res.data.map(mapToCoffeeShop)))
       .catch((err) => setErrorFeatured(err instanceof ApiError ? err.message : "Gagal memuat data featured"))
       .finally(() => setLoadingFeatured(false));
 
     // 3. New (sort=new)
-    listCoffeeShops({ sort: "new", limit: 3 })
+    listCoffeeShops({ sort: "new", limit: 4 })
       .then((res) => setNewShops(res.data.map(mapToCoffeeShop)))
       .catch((err) => setErrorNew(err instanceof ApiError ? err.message : "Gagal memuat data terbaru"))
       .finally(() => setLoadingNew(false));

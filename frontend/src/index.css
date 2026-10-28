@@ -40,6 +40,10 @@
   --color-warning-soft: var(--warning-soft);
   --color-info-soft: var(--info-soft);
 
+  /* Krem kuning hangat: dipakai untuk base halaman, ujung fade foto,
+     dan background section bawah (satu sumber warna). */
+  --color-cream-fade: var(--cream-fade);
+
   /* Card listing kedai (kontras terhadap background) */
   --color-card-bg: var(--card-bg);
   --color-card-border: var(--card-border);
@@ -51,12 +55,14 @@
   /* Brand palette (diselaraskan dengan desain.md) */
   --espresso: #1c1917;
   --cream: #faf7f2;
+  --cream-fade: #FFF3D6;
+  --cream-veil: rgba(255, 243, 214, 0.15);
   --terracotta: #c2410c;
   --terracotta-strong: #9a3412;
   --terracotta-soft: #fdf1e7;
 
   /* Surfaces */
-  --canvas: #faf7f2;
+  --canvas: var(--cream-fade);
   --surface: #ffffff;
   --surface-hover: #fdf6ee;
 
@@ -109,15 +115,42 @@ body {
   margin: 0;
   min-width: 320px;
   background-color: var(--canvas);
-  background-image: linear-gradient(to bottom, rgba(250, 248, 245, 0.94), rgba(255, 255, 255, 0.97)), url('https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=2000&q=80');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
   color: var(--text-primary);
   font-family: var(--font-sans);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Foto background global (portrait 816x1456). Terlihat lembut tapi jelas
+   (opacity 0.25), tanpa blur/scale. position: fixed agar stabil
+   di mobile; pointer-events: none. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: url('/images/coffe-background.jpg');
+  background-size: cover;
+  background-position: center 65%;
+  background-repeat: no-repeat;
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+/* Overlay krem pucat (0.28) di atas foto, plus gradasi tepi bawah
+   dari transparan ke krem kuning hangat (--color-cream-fade) setinggi 180px. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: rgba(255, 247, 242, 0.28);
+  background-image: linear-gradient(to bottom, transparent, var(--color-cream-fade));
+  background-size: 100% 180px;
+  background-position: bottom;
+  background-repeat: no-repeat;
 }
 
 /* Accessible, consistent focus ring (visible even on outline-none controls) */

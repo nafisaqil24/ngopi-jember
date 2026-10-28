@@ -31,6 +31,11 @@ const JEMBER_LAT_MAX = -7.8
 const JEMBER_LNG_MIN = 113.2
 const JEMBER_LNG_MAX = 114.2
 
+// Titik tengah Sumbersari yang dipakai sebagai placeholder default di form.
+// Kafe baru tidak boleh memakai koordinat ini supaya lokasi benar-benar dipilih.
+const PLACEHOLDER_LAT = -8.1721
+const PLACEHOLDER_LNG = 113.7008
+
 // String kosong / null dari multipart TIDAK boleh terbaca sebagai angka 0.
 // Nilai kosong diperlakukan sebagai "tidak diisi" (undefined).
 const emptyToUndefined = (value: unknown) => (value === '' || value === null ? undefined : value)
@@ -64,6 +69,21 @@ const coordinatesRule = (data: { latitude?: number; longitude?: number }, ctx: z
   }
 }
 
+// Kafe baru tidak boleh memakai koordinat placeholder default (-8.1721, 113.7008).
+// Koordinat kosong tetap diperbolehkan; yang ditolak hanya titik default persis.
+const rejectPlaceholderCoordinates = (
+  data: { latitude?: number; longitude?: number },
+  ctx: z.RefinementCtx,
+) => {
+  if (data.latitude === PLACEHOLDER_LAT && data.longitude === PLACEHOLDER_LNG) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['latitude'],
+      message: 'Koordinat tidak boleh memakai titik default (-8.1721, 113.7008); tandai lokasi kafe yang sebenarnya',
+    })
+  }
+}
+
 const shopFields = z.object({
   name: z.string().trim().min(3).max(120),
   description: z.string().trim().min(10).max(2000),
@@ -78,7 +98,7 @@ const shopFields = z.object({
   status: z.enum(['OPEN', 'CLOSED', 'TEMPORARILY_CLOSED']).optional(),
 })
 
-const createShop = shopFields.superRefine(coordinatesRule)
+const createShop = shopFields.superRefine(coordinatesRule).superRefine(rejectPlaceholderCoordinates)
 
 // updateShop sengaja TIDAK memuat ownerId/isVerified sehingga tidak bisa diubah lewat endpoint ini.
 const updateShop = shopFields.partial().superRefine(coordinatesRule)

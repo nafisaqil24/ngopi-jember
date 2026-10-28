@@ -97,13 +97,16 @@ chatRouter.post(
 
       if (parsedIntent.intent === 'search_shops') {
         const filters = parsedIntent.filters || {}
-        searchResult = await searchShops({
-          district: filters.district,
-          facilitySlugs: filters.facilitySlugs,
-          maxPrice: filters.maxPrice,
-          openNow: filters.openNow,
-          priorities: parsedIntent.priorities,
-        })
+        searchResult = await searchShops(
+          {
+            district: filters.district,
+            facilitySlugs: filters.facilitySlugs,
+            maxPrice: filters.maxPrice,
+            openNow: filters.openNow,
+            priorities: parsedIntent.priorities,
+          },
+          userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : undefined
+        )
       } else if (parsedIntent.intent === 'nearby') {
         if (!userLocation) {
           needsLocation = true

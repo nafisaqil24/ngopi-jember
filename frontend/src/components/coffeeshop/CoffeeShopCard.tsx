@@ -20,7 +20,7 @@ export default function CoffeeShopCard({ coffeeShop, index = 0 }: CoffeeShopCard
         to={`/coffee-shops/${coffeeShop.slug}`}
         className="group flex flex-col overflow-hidden rounded-[4px] border border-card-border bg-card-bg shadow-card hover:shadow-card-hover transition-shadow duration-200 h-full"
       >
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-info-soft">
+        <div className="relative aspect-[16/10] w-full overflow-hidden bg-info-soft">
           <img
             src={coffeeShop.imageUrl}
             alt={coffeeShop.name}
@@ -28,13 +28,13 @@ export default function CoffeeShopCard({ coffeeShop, index = 0 }: CoffeeShopCard
             className="h-full w-full rounded-t-[4px] object-cover transition duration-300 group-hover:scale-105"
           />
           {coffeeShop.isFeatured && (
-            <span className="absolute left-3 top-3 rounded-full bg-terracotta px-3 py-1 font-mono text-[11px] font-bold text-white shadow-md tracking-wider uppercase">
+            <span className="absolute left-3 top-3 rounded-full bg-terracotta px-2.5 py-1 font-mono text-xs font-bold text-white shadow-md tracking-wider uppercase">
               Featured
             </span>
           )}
           {coffeeShop.openStatus && (
             <span
-              className={`badge-status absolute bottom-3 left-3 ${
+              className={`badge-status absolute bottom-3 left-3 px-2.5 py-1 ${
                 coffeeShop.openStatus === "buka"
                   ? "badge-status--open"
                   : coffeeShop.openStatus === "tutup"
@@ -52,9 +52,9 @@ export default function CoffeeShopCard({ coffeeShop, index = 0 }: CoffeeShopCard
           )}
         </div>
 
-        <div className="flex flex-1 flex-col gap-2 p-4">
+        <div className="flex flex-1 flex-col gap-1.5 p-4">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold text-heading">
+            <h3 className="text-base font-semibold text-heading">
               {coffeeShop.name}
             </h3>
             <div className="flex shrink-0 items-center gap-1 text-sm font-semibold text-heading">
@@ -77,15 +77,15 @@ export default function CoffeeShopCard({ coffeeShop, index = 0 }: CoffeeShopCard
             {coffeeShop.priceRange}
           </p>
 
-          <div className="mt-1 flex flex-wrap gap-1.5">
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
             {coffeeShop.facilities.slice(0, 3).map((facility) => (
-              <span key={facility} className="chip text-xs bg-white border-card-border">
+              <span key={facility} className="chip text-xs px-2.5 py-1 bg-white border-card-border">
                 {facility}
               </span>
             ))}
           </div>
 
-          <span className="mt-auto pt-2 font-mono text-xs font-bold text-terracotta group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+          <span className="mt-auto pt-1.5 font-mono text-xs font-bold text-terracotta group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
             Lihat Detail →
           </span>
         </div>

@@ -220,12 +220,7 @@ export default function CoffeeShopDetail() {
         transition={{ duration: 0.4 }}
         className="mx-auto max-w-7xl px-5 py-10"
       >
-        <Link to="/coffee-shops" className="btn-pill btn-pill-outline">
-          <IconArrowLeft className="h-4 w-4" />
-          Kembali menjelajahi
-        </Link>
-
-        <div className="mt-5 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
           {/* Kartu info: kolom kanan (sticky) di desktop, tampil lebih dulu di mobile */}
           <aside className="order-1 h-fit rounded-2xl card-surface p-6 lg:order-2 lg:col-start-2 lg:row-start-1 lg:sticky lg:top-24">
             {shop.categories[0]?.category && (
@@ -491,6 +486,13 @@ export default function CoffeeShopDetail() {
               </div>
             </Block>
           </section>
+        </div>
+
+        <div className="mt-12 mb-8">
+          <Link to="/coffee-shops" className="btn-pill btn-pill-outline">
+            <IconArrowLeft className="h-4 w-4" />
+            Kembali menjelajahi
+          </Link>
         </div>
       </motion.main>
     </MainLayout>

@@ -54,8 +54,8 @@ describe('Admin Coffee Shop CRUD', () => {
         district: 'Sumbersari',
         priceRange: 'Rp15rb-30rb',
         openingHours: '08.00-22.00',
-        latitude: -8.1721,
-        longitude: 113.7008,
+        latitude: -8.1715,
+        longitude: 113.729,
       })
     expect(create.status).toBe(201)
     shopId = create.body.data.id
@@ -231,12 +231,31 @@ describe('Admin Coffee Shop CRUD', () => {
         district: 'Sumbersari',
         priceRange: 'Rp15rb-30rb',
         openingHours: '08.00-22.00',
-        latitude: -8.1721,
-        longitude: 113.7008,
+        latitude: -8.1715,
+        longitude: 113.729,
       })
     expect(res.status).toBe(201)
     expect(res.body.success).toBe(true)
-    expect(res.body.data.latitude).toBeCloseTo(-8.1721, 4)
+    expect(res.body.data.latitude).toBeCloseTo(-8.1715, 4)
+  })
+
+  it('e5b. create menolak koordinat placeholder default (-8.1721, 113.7008) -> 400', async () => {
+    const res = await request(app)
+      .post('/api/coffee-shops')
+      .set('Authorization', `Bearer ${owner1Token}`)
+      .send({
+        name: 'Koordinat Placeholder',
+        description: 'Deskripsi cukup panjang',
+        address: 'Jl. Test',
+        district: 'Sumbersari',
+        priceRange: 'Rp15rb-30rb',
+        openingHours: '08.00-22.00',
+        latitude: -8.1721,
+        longitude: 113.7008,
+      })
+    expect(res.status).toBe(400)
+    expect(res.body.success).toBe(false)
+    expect(res.body.errors.latitude.join(' ')).toMatch(/default/i)
   })
 
   it('e6. update menolak koordinat di luar Jember -> 400', async () => {

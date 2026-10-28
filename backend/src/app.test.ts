@@ -54,8 +54,8 @@ describe('API Health and Error Handling', () => {
         district: 'Sumbersari',
         priceRange: 'Rp15rb-30rb',
         openingHours: '09.00-22.00',
-        latitude: -8.1721,
-        longitude: 113.7008,
+        latitude: -8.1715,
+        longitude: 113.729,
       })
     
     expect(shopRes.status).toBe(201)

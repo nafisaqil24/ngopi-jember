@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../../layouts/MainLayout";
+import LocationPickerMap from "../../components/common/LocationPickerMap";
 import { useAuth } from "../../hooks/useAuth";
 import {
   getOwnerCoffeeShop,
@@ -45,8 +46,8 @@ export default function OwnerDashboard() {
   const [shopDescription, setShopDescription] = useState("");
   const [shopPhone, setShopPhone] = useState("");
   const [shopInstagram, setShopInstagram] = useState("");
-  const [shopLatitude, setShopLatitude] = useState("-8.1721");
-  const [shopLongitude, setShopLongitude] = useState("113.7008");
+  const [shopLatitude, setShopLatitude] = useState("");
+  const [shopLongitude, setShopLongitude] = useState("");
   const [allFacilities, setAllFacilities] = useState<ApiFacility[]>([]);
   const [selectedFacilityIds, setSelectedFacilityIds] = useState<string[]>([]);
   const [shopImage, setShopImage] = useState<File | null>(null);
@@ -72,8 +73,8 @@ export default function OwnerDashboard() {
   const [editShopPhone, setEditShopPhone] = useState("");
   const [editShopInstagram, setEditShopInstagram] = useState("");
   const [editShopStatus, setEditShopStatus] = useState<"OPEN" | "CLOSED" | "TEMPORARILY_CLOSED">("OPEN");
-  const [editShopLatitude, setEditShopLatitude] = useState("-8.1721");
-  const [editShopLongitude, setEditShopLongitude] = useState("113.7008");
+  const [editShopLatitude, setEditShopLatitude] = useState("");
+  const [editShopLongitude, setEditShopLongitude] = useState("");
   const [editShopSearchQuery, setEditShopSearchQuery] = useState("");
   const [editFacilityIds, setEditFacilityIds] = useState<string[]>([]);
   const [editShopImage, setEditShopImage] = useState<File | null>(null);
@@ -106,8 +107,6 @@ export default function OwnerDashboard() {
     if (!query.trim()) return;
     let normalized = query.toLowerCase().replace("jln", "jl").replace(/\./g, "").replace(/\s+/g, " ").trim();
     const fullQuery = `${normalized}, Kota Jember, Jawa Timur, Indonesia`;
-    setShopLatitude("-8.1721");
-    setShopLongitude("113.7008");
     try {
       let response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullQuery)}`);
       let results = await response.json();
@@ -121,7 +120,7 @@ export default function OwnerDashboard() {
         setShopLongitude(String(loc.lng));
         alert(`✅ Alamat ditemukan:\n${loc.display_name}\nLat: ${loc.lat}, Lng: ${loc.lng}`);
       } else {
-        alert("❌ Alamat tidak ditemukan.");
+        alert("❌ Alamat tidak ditemukan. Cari kata kunci lain, gunakan GPS, atau klik titik pada peta.");
       }
     } catch (_err) {
       alert("❌ Error koneksi search alamat.");
@@ -132,8 +131,6 @@ export default function OwnerDashboard() {
     if (!query.trim()) return;
     let normalized = query.toLowerCase().replace("jln", "jl").replace(/\./g, "").replace(/\s+/g, " ").trim();
     const fullQuery = `${normalized}, Kota Jember, Jawa Timur, Indonesia`;
-    setEditShopLatitude("-8.1721");
-    setEditShopLongitude("113.7008");
     try {
       let response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullQuery)}`);
       let results = await response.json();
@@ -147,7 +144,7 @@ export default function OwnerDashboard() {
         setEditShopLongitude(String(loc.lng));
         alert(`✅ Alamat ditemukan:\n${loc.display_name}\nLat: ${loc.lat}, Lng: ${loc.lng}`);
       } else {
-        alert("❌ Alamat tidak ditemukan.");
+        alert("❌ Alamat tidak ditemukan. Cari kata kunci lain, gunakan GPS, atau klik titik pada peta.");
       }
     } catch (_err) {
       alert("❌ Error koneksi search alamat.");
@@ -177,8 +174,8 @@ export default function OwnerDashboard() {
           setEditShopPhone(data.phone || "");
           setEditShopInstagram(data.instagram || "");
           setEditShopStatus(data.status);
-          setEditShopLatitude(data.latitude !== null && data.latitude !== undefined ? String(data.latitude) : "-8.1721");
-          setEditShopLongitude(data.longitude !== null && data.longitude !== undefined ? String(data.longitude) : "113.7008");
+          setEditShopLatitude(data.latitude !== null && data.latitude !== undefined ? String(data.latitude) : "");
+          setEditShopLongitude(data.longitude !== null && data.longitude !== undefined ? String(data.longitude) : "");
           setEditFacilityIds(data.facilities?.map(f => f.facility.id) || []);
         }
       })
@@ -206,6 +203,10 @@ export default function OwnerDashboard() {
   async function handleCreateShop(e: React.FormEvent) {
     e.preventDefault();
     if (!token) return;
+    if (!shopLatitude.trim() || !shopLongitude.trim()) {
+      setCreateShopError("Lokasi wajib ditentukan. Cari alamat, gunakan GPS, atau klik titik pada peta terlebih dahulu.");
+      return;
+    }
     setCreatingShop(true);
     setCreateShopError("");
 
@@ -240,8 +241,8 @@ export default function OwnerDashboard() {
         setEditShopPhone(updated.phone || "");
         setEditShopInstagram(updated.instagram || "");
         setEditShopStatus(updated.status);
-        setEditShopLatitude(updated.latitude !== null && updated.latitude !== undefined ? String(updated.latitude) : "-8.1721");
-        setEditShopLongitude(updated.longitude !== null && updated.longitude !== undefined ? String(updated.longitude) : "113.7008");
+        setEditShopLatitude(updated.latitude !== null && updated.latitude !== undefined ? String(updated.latitude) : "");
+        setEditShopLongitude(updated.longitude !== null && updated.longitude !== undefined ? String(updated.longitude) : "");
         setEditFacilityIds(updated.facilities?.map(f => f.facility.id) || []);
       }
     } catch (err: any) {
@@ -254,6 +255,10 @@ export default function OwnerDashboard() {
   async function handleUpdateShop(e: React.FormEvent) {
     e.preventDefault();
     if (!shop || !token) return;
+    if (!editShopLatitude.trim() || !editShopLongitude.trim()) {
+      setEditShopError("Lokasi wajib ditentukan. Cari alamat, gunakan GPS, atau klik titik pada peta terlebih dahulu.");
+      return;
+    }
     setUpdatingShop(true);
     setEditShopError("");
 
@@ -475,6 +480,19 @@ export default function OwnerDashboard() {
                   >
                     <span>📍 Gunakan GPS Saya</span>
                   </button>
+                  <span className="ml-3 text-xs text-espresso/60">
+                    Lat: {shopLatitude || "(belum dipilih)"}, Lng: {shopLongitude || "(belum dipilih)"}
+                  </span>
+                </div>
+                <div className="sm:col-span-2">
+                  <LocationPickerMap
+                    latitude={Number(shopLatitude) || 0}
+                    longitude={Number(shopLongitude) || 0}
+                    onChange={(lat, lng) => {
+                      setShopLatitude(String(lat));
+                      setShopLongitude(String(lng));
+                    }}
+                  />
                 </div>
                 <div className="mt-4 rounded-xl border border-espresso/15 bg-info-soft p-4 space-y-3">
                   <h5 className="text-xs font-bold text-espresso/60 uppercase tracking-wider">Fasilitas Coffee Shop</h5>
@@ -749,7 +767,17 @@ export default function OwnerDashboard() {
                         >
                           <span>📍 Gunakan GPS Saya untuk Lokasi Baru</span>
                         </button>
-                        <span className="ml-3 text-xs text-espresso/60">Lat: {editShopLatitude}, Lng: {editShopLongitude}</span>
+                        <span className="ml-3 text-xs text-espresso/60">Lat: {editShopLatitude || "(belum dipilih)"}, Lng: {editShopLongitude || "(belum dipilih)"}</span>
+                      </div>
+                      <div className="mt-3">
+                        <LocationPickerMap
+                          latitude={Number(editShopLatitude) || 0}
+                          longitude={Number(editShopLongitude) || 0}
+                          onChange={(lat, lng) => {
+                            setEditShopLatitude(String(lat));
+                            setEditShopLongitude(String(lng));
+                          }}
+                        />
                       </div>
                     </div>
                     <div className="sm:col-span-2 rounded-xl border border-espresso/15 bg-white p-4 space-y-3">

@@ -321,7 +321,7 @@ export default function CoffeeShopExplorer() {
           {mode === "nearby" ? (
             <>
               {nearbyLoading && (
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   <p className="col-span-full text-center text-body font-medium">Mencari coffee shop terdekat...</p>
                   {[1, 2, 3].map((n) => (
                     <div key={n} className="h-80 rounded-2xl skeleton" />
@@ -337,7 +337,7 @@ export default function CoffeeShopExplorer() {
                 </div>
               )}
               {!nearbyLoading && !nearbyError && nearbyShops.length > 0 && (
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {nearbyShops.map((shop, index) => (
                     <CoffeeShopCard key={shop.id} coffeeShop={mapNearbyToCoffeeShop(shop)} index={index} />
                   ))}
@@ -347,7 +347,7 @@ export default function CoffeeShopExplorer() {
           ) : (
             <>
               {loading && (
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   <p className="col-span-full text-center text-body font-medium">Memuat coffee shop...</p>
                   {[1, 2, 3, 4, 5, 6].map((n) => (
                     <div key={n} className="h-80 rounded-2xl skeleton" />
@@ -357,7 +357,7 @@ export default function CoffeeShopExplorer() {
               {!loading && error && <p className="text-center text-danger font-bold">{error}</p>}
               {!loading && !error && sortedShops.length === 0 && <Empty reset={reset} />}
               {!loading && !error && sortedShops.length > 0 && (
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {sortedShops.map((shop, index) => (
                     <CoffeeShopCard key={shop.id} coffeeShop={mapToCoffeeShop(shop)} index={index} />
                   ))}

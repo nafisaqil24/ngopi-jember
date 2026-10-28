@@ -39,8 +39,8 @@ describe('Analytics Event Tracking', () => {
         district: 'Sumbersari',
         priceRange: 'Rp15rb-30rb',
         openingHours: '08.00-22.00',
-        latitude: -8.1721,
-        longitude: 113.7008,
+        latitude: -8.1715,
+        longitude: 113.729,
       })
     shopId1 = create1.body.data.id
     await request(app).patch(`/api/admin/coffee-shops/${shopId1}/verify`).set('Authorization', `Bearer ${adminToken}`).send({ isVerified: true })
@@ -55,8 +55,8 @@ describe('Analytics Event Tracking', () => {
         district: 'Kaliwates',
         priceRange: 'Rp15rb-30rb',
         openingHours: '08.00-22.00',
-        latitude: -8.1721,
-        longitude: 113.7008,
+        latitude: -8.1715,
+        longitude: 113.729,
       })
     shopId2 = create2.body.data.id
     await request(app).patch(`/api/admin/coffee-shops/${shopId2}/verify`).set('Authorization', `Bearer ${adminToken}`).send({ isVerified: true })
@@ -113,8 +113,8 @@ describe('Analytics Event Tracking', () => {
         district: 'Sumbersari',
         priceRange: 'Rp15rb-30rb',
         openingHours: '08.00-22.00',
-        latitude: -8.1721,
-        longitude: 113.7008,
+        latitude: -8.1715,
+        longitude: 113.729,
       })
     const unverifiedId = createRes.body.data.id
 

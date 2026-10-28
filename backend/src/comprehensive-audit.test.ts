@@ -77,8 +77,8 @@ describe('Comprehensive End-to-End System Audit', () => {
       .field('district', 'Sumbersari')
       .field('priceRange', 'Rp15rb-30rb')
       .field('openingHours', '09.00-22.00')
-      .field('latitude', -8.1721)
-      .field('longitude', 113.7008)
+      .field('latitude', -8.1715)
+      .field('longitude', 113.729)
       .attach('image', dummyBuffer, { filename: 'test.png', contentType: 'image/png' })
 
     expect(shopRes.status).toBe(201)
