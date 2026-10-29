@@ -16,6 +16,7 @@ export type ChatShop = {
   facilities: string[]
   rating: number | null
   reviewCount: number
+  ratingSource?: 'google' | 'ulasan' | null
   image: string | null
   distanceKm?: number
   openStatus?: 'buka' | 'tutup' | 'tidak_diketahui'

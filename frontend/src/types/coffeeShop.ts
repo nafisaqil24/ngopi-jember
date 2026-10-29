@@ -13,8 +13,9 @@ export interface CoffeeShop {
   district: string; // kecamatan
   address: string;
   priceRange: string; // contoh: "Rp15rb - Rp35rb"
-  rating: number;
+  rating: number | null;
   reviewCount: number;
+  ratingSource?: "google" | "ulasan" | null;
   facilities: string[];
   imageUrl: string;
   isFeatured: boolean;

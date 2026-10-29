@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { getImageUrl } from '../../services/coffeeShop'
 import type { ChatShop } from '../../services/chat'
+import { formatRating, hasRating } from '../../utils/rating'
 
 function statusBadge(status?: ChatShop['openStatus']) {
   if (status === 'buka') {
@@ -16,6 +17,7 @@ function statusBadge(status?: ChatShop['openStatus']) {
 export default function ChatShopCard({ shop }: { shop: ChatShop }) {
   const imageUrl = getImageUrl(shop.image)
   const badge = statusBadge(shop.openStatus)
+  const ratingAvailable = hasRating(shop.rating, shop.reviewCount, shop.ratingSource)
 
   return (
     <Link
@@ -49,12 +51,13 @@ export default function ChatShopCard({ shop }: { shop: ChatShop }) {
         <p className="mt-0.5 truncate text-xs font-medium text-body">{shop.district}</p>
 
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-medium text-muted">
-          {shop.rating !== null && shop.rating !== undefined ? (
+          {ratingAvailable ? (
             <span className="font-bold text-terracotta-strong">
-              ★ {shop.rating.toFixed(1)} <span className="font-medium text-muted">({shop.reviewCount} ulasan)</span>
+              ★ {formatRating(shop.rating, shop.reviewCount, shop.ratingSource)}{" "}
+              <span className="font-medium text-muted">({shop.reviewCount} ulasan)</span>
             </span>
           ) : (
-            <span>Belum ada ulasan</span>
+            <span>Belum ada rating</span>
           )}
           {shop.distanceKm !== undefined && (
             <span className="font-mono font-bold text-terracotta-strong">📍 {shop.distanceKm} km</span>

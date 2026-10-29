@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import type { CoffeeShop } from "../../types/coffeeShop";
+import { formatRating, hasRating } from "../../utils/rating";
 
 interface CoffeeShopCardProps {
   coffeeShop: CoffeeShop;
@@ -8,6 +9,8 @@ interface CoffeeShopCardProps {
 }
 
 export default function CoffeeShopCard({ coffeeShop, index = 0 }: CoffeeShopCardProps) {
+  const ratingAvailable = hasRating(coffeeShop.rating, coffeeShop.reviewCount, coffeeShop.ratingSource);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -57,11 +60,15 @@ export default function CoffeeShopCard({ coffeeShop, index = 0 }: CoffeeShopCard
             <h3 className="text-base font-semibold text-heading">
               {coffeeShop.name}
             </h3>
-            <div className="flex shrink-0 items-center gap-1 text-sm font-semibold text-heading">
-              <span aria-hidden className="text-terracotta">★</span>
-              {coffeeShop.rating.toFixed(1)}
-              <span className="text-muted">({coffeeShop.reviewCount})</span>
-            </div>
+            {ratingAvailable ? (
+              <div className="flex shrink-0 items-center gap-1 text-sm font-semibold text-heading">
+                <span aria-hidden className="text-terracotta">★</span>
+                {formatRating(coffeeShop.rating, coffeeShop.reviewCount, coffeeShop.ratingSource)}
+                <span className="text-muted">({coffeeShop.reviewCount})</span>
+              </div>
+            ) : (
+              <span className="shrink-0 text-xs font-semibold text-muted">Belum ada rating</span>
+            )}
           </div>
 
           <div className="flex items-center justify-between text-sm">

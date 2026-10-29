@@ -49,9 +49,9 @@ describe('ChatShopCard', () => {
     expect(screen.getByRole('link')).toHaveAttribute('href', '/coffee-shops/kopi-abc')
   })
 
-  it('menampilkan "Belum ada ulasan" bila rating null', () => {
+  it('menampilkan "Belum ada rating" bila rating null', () => {
     renderCard(makeShop({ rating: null }))
-    expect(screen.getByText('Belum ada ulasan')).toBeInTheDocument()
+    expect(screen.getByText('Belum ada rating')).toBeInTheDocument()
   })
 
   it('menampilkan jarak bila distanceKm tersedia', () => {

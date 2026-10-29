@@ -19,6 +19,12 @@ const mockShop: CoffeeShop = {
   isOpenNow: true,
 }
 
+const shopWithoutRating: CoffeeShop = {
+  ...mockShop,
+  rating: 0,
+  reviewCount: 0,
+}
+
 describe('CoffeeShopCard Component', () => {
   it('renders coffee shop details correctly', () => {
     render(
@@ -33,5 +39,16 @@ describe('CoffeeShopCard Component', () => {
     expect(screen.getByText('Featured')).toBeInTheDocument()
     expect(screen.getByText('Wi-Fi')).toBeInTheDocument()
     expect(screen.getByText('AC')).toBeInTheDocument()
+  })
+
+  it('menampilkan teks netral tanpa angka saat belum ada rating', () => {
+    render(
+      <BrowserRouter>
+        <CoffeeShopCard coffeeShop={shopWithoutRating} />
+      </BrowserRouter>
+    )
+
+    expect(screen.getByText('Belum ada rating')).toBeInTheDocument()
+    expect(screen.queryByText('0.0')).not.toBeInTheDocument()
   })
 })

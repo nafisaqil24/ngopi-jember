@@ -5,8 +5,9 @@ import { motion } from "framer-motion";
 import MainLayout from "../layouts/MainLayout";
 import { getCoffeeShopBySlug, getImageUrl, createReview, trackEvent, ApiError, type ApiCoffeeShopDetail } from "../services/coffeeShop";
 import { useAuth } from "../hooks/useAuth";
-import { formatGoogleRatingLabel } from "../utils/rating";
+import { formatGoogleRatingLabel, formatRating, hasRating } from "../utils/rating";
 import { getEffectiveOpenStatus } from "../utils/openStatus";
+import { normalizeWhatsAppNumber } from "../utils/phone";
 import NotFound from "./NotFound";
 
 // Catat event analitik "sekali per sesi browser" untuk sebuah kedai.
@@ -109,10 +110,9 @@ function buildMapsUrl(shop: ApiCoffeeShopDetail) {
   return `https://maps.google.com/?q=${encodeURIComponent(`${shop.address}, ${shop.district}, Jember`)}`;
 }
 
-function buildWhatsappUrl(phone: string | null) {
-  if (!phone) return null;
-  const digitsOnly = phone.replace(/[^0-9]/g, "");
-  return `https://wa.me/${digitsOnly}`;
+function buildWhatsappUrl(phone: string | null | undefined) {
+  const normalized = normalizeWhatsAppNumber(phone);
+  return normalized ? `https://wa.me/${normalized}` : null;
 }
 
 function buildInstagramUrl(handle: string | null) {
@@ -209,7 +209,7 @@ export default function CoffeeShopDetail() {
 
   const whatsappUrl = buildWhatsappUrl(shop.phone);
   const instagramUrl = buildInstagramUrl(shop.instagram);
-  const rating = shop.rating ?? 0;
+  const ratingAvailable = hasRating(shop.rating, shop.reviewCount, shop.ratingSource);
   const openStatus = getEffectiveOpenStatus(shop.openingHours, shop.status);
 
   return (
@@ -237,16 +237,24 @@ export default function CoffeeShopDetail() {
               <span>{shop.address}</span>
             </p>
 
-            <div className="mt-4 flex items-center gap-2">
-              <IconStar className="h-6 w-6 text-terracotta" />
-              <b className="text-2xl font-black text-terracotta">{rating.toFixed(1)}</b>
-            </div>
-            {shop.ratingSource === "google" ? (
-              <p className="mt-1 text-xs text-muted">
-                {formatGoogleRatingLabel(shop.googleReviewCount, shop.googleRatingAt)}
-              </p>
+            {ratingAvailable ? (
+              <>
+                <div className="mt-4 flex items-center gap-2">
+                  <IconStar className="h-6 w-6 text-terracotta" />
+                  <b className="text-2xl font-black text-terracotta">
+                    {formatRating(shop.rating, shop.reviewCount, shop.ratingSource)}
+                  </b>
+                </div>
+                {shop.ratingSource === "google" ? (
+                  <p className="mt-1 text-xs text-muted">
+                    {formatGoogleRatingLabel(shop.googleReviewCount, shop.googleRatingAt)}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-muted">{shop.reviewCount} ulasan</p>
+                )}
+              </>
             ) : (
-              <p className="mt-1 text-xs text-muted">{shop.reviewCount} ulasan</p>
+              <p className="mt-4 text-sm font-bold text-muted">Belum ada rating</p>
             )}
 
             <div className="my-5 border-t border-subtle" />

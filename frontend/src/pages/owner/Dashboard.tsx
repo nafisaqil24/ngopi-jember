@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import MainLayout from "../../layouts/MainLayout";
 import LocationPickerMap from "../../components/common/LocationPickerMap";
 import { useAuth } from "../../hooks/useAuth";
+import { formatRating, hasRating } from "../../utils/rating";
 import {
   getOwnerCoffeeShop,
   createMenu,
@@ -664,7 +665,11 @@ export default function OwnerDashboard() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-lg font-black text-terracotta">★ {shop.rating ? shop.rating.toFixed(1) : "0.0"}</p>
+                    <p className="text-lg font-black text-terracotta">
+                      {hasRating(shop.rating, shop.reviewCount, shop.ratingSource)
+                        ? `★ ${formatRating(shop.rating, shop.reviewCount, shop.ratingSource)}`
+                        : "Belum ada rating"}
+                    </p>
                     <p className="text-xs text-espresso/60">{shop.reviewCount} ulasan</p>
                   </div>
                   <div className="flex gap-2">
@@ -952,7 +957,7 @@ export default function OwnerDashboard() {
                       <div className="mt-3 rounded-xl bg-espresso/5 p-4 text-center">
                         <p className="text-sm text-espresso/70">Rating Rata-rata</p>
                         <p className="text-2xl font-black text-terracotta">
-                          {analytics.averageRating ? analytics.averageRating.toFixed(1) : "0.0"}
+                          {formatRating(analytics.averageRating, analytics.reviewCount)}
                         </p>
                       </div>
                     </>

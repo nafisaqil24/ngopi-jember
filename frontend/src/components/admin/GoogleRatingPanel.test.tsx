@@ -95,4 +95,9 @@ describe('formatGoogleRatingLabel', () => {
   it('mengembalikan null bila tanggal tidak ada', () => {
     expect(formatGoogleRatingLabel(150, null)).toBeNull()
   })
+
+  it('menyebut sumber Google Maps meski jumlah ulasan tidak tersedia', () => {
+    const label = formatGoogleRatingLabel(null, '2026-10-22T00:00:00.000Z')
+    expect(label).toContain('Rating Google Maps, per')
+  })
 })
