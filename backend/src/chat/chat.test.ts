@@ -3,6 +3,7 @@ import request from 'supertest'
 import { app } from '../app.js'
 import * as llmClient from './llm.client.js'
 import { CHAT_RESTING_REPLY } from './templates.js'
+import { LlmError, LLM_ERROR_META } from './llm.errors.js'
 
 // Izinkan isolasi rate limiter per-test lewat header X-Forwarded-For.
 // Hanya memengaruhi instance app di dalam file test ini, bukan kode produksi.
@@ -206,5 +207,46 @@ describe('Chat API (/api/chat)', () => {
     expect(serialized).not.toContain('ownerId')
     expect(serialized).not.toContain('subscription')
     expect(serialized).not.toContain('email')
+  })
+
+  it('mengembalikan status & pesan spesifik untuk tiap jenis error provider (bukan smalltalk)', async () => {
+    vi.spyOn(llmClient, 'isLlmEnabled').mockReturnValue(true)
+    const callSpy = vi.spyOn(llmClient, 'callLlmChat')
+    const kinds = ['timeout', 'rate_limit', 'auth', 'quota', 'invalid_response', 'unknown'] as const
+
+    let i = 0
+    for (const kind of kinds) {
+      i++
+      callSpy.mockRejectedValueOnce(new LlmError(kind))
+      const res = await request(app)
+        .post('/api/chat')
+        .set('X-Forwarded-For', `198.51.100.${100 + i}`)
+        .send({ message: 'halo' })
+
+      expect(res.status).toBe(LLM_ERROR_META[kind].httpStatus)
+      expect(res.body.success).toBe(false)
+      expect(res.body.message).toBe(LLM_ERROR_META[kind].userMessage)
+      expect(res.body.code).toBe(kind)
+      expect(res.body.data).toBeUndefined()
+      expect(res.body.message).not.toContain('Halo!')
+    }
+  })
+
+  it('error provider tidak membocorkan detail sensitif ke client', async () => {
+    vi.spyOn(llmClient, 'isLlmEnabled').mockReturnValue(true)
+    vi.spyOn(llmClient, 'callLlmChat').mockRejectedValueOnce(
+      new LlmError('auth', { providerStatus: 401, providerCode: 'invalid_api_key' })
+    )
+
+    const res = await request(app)
+      .post('/api/chat')
+      .set('X-Forwarded-For', '198.51.100.220')
+      .send({ message: 'halo' })
+
+    const serialized = JSON.stringify(res.body)
+    expect(serialized).not.toContain('invalid_api_key')
+    expect(serialized).not.toContain('Bearer')
+    expect(serialized).not.toContain('LLM error')
+    expect(res.body.message).toBe(LLM_ERROR_META.auth.userMessage)
   })
 })

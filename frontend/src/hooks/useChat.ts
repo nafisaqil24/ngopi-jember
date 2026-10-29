@@ -14,6 +14,12 @@ const NON_LOCATION_ERROR_MESSAGES = new Set([
   'Terlalu banyak pesan, tunggu sebentar ya',
   'Pesanmu terlalu panjang',
   'Terjadi kesalahan pada server',
+  // Pesan error provider LLM dari backend (lihat backend/src/chat/llm.errors.ts).
+  'Chatbot lagi lama merespons, coba lagi sebentar ya.',
+  'Chatbot lagi sibuk, coba lagi sebentar ya.',
+  'Chatbot lagi sibuk, coba lagi nanti ya.',
+  'Chatbot sedang ada gangguan, coba lagi nanti ya.',
+  'Chatbot memberi jawaban yang tidak bisa diproses, coba lagi ya.',
 ])
 
 function withKecamatanHint(message: string): string {

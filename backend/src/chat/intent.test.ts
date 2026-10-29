@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { parsedIntentSchema } from './schema.js'
 import { parseUserIntent } from './intent.js'
 import * as llmClient from './llm.client.js'
+import { LlmError } from './llm.errors.js'
 
 describe('Intent Schema & Parser', () => {
   beforeEach(() => {
@@ -138,6 +139,30 @@ describe('Intent Schema & Parser', () => {
       })
     )
     const result = await parseUserIntent('cari kedai')
+    expect(result.intent).toBe('smalltalk')
+  })
+
+  it('meneruskan LlmError provider, tidak jatuh ke smalltalk', async () => {
+    vi.spyOn(llmClient, 'callLlmChat').mockRejectedValue(new LlmError('timeout'))
+    await expect(parseUserIntent('halo')).rejects.toMatchObject({
+      kind: 'timeout',
+      httpStatus: 504,
+    })
+  })
+
+  it('meneruskan LlmError rate_limit dari provider', async () => {
+    vi.spyOn(llmClient, 'callLlmChat').mockRejectedValue(new LlmError('rate_limit'))
+    await expect(parseUserIntent('halo')).rejects.toMatchObject({ kind: 'rate_limit' })
+  })
+
+  it('menganggap konten LLM tak terbaca sebagai invalid_response', async () => {
+    vi.spyOn(llmClient, 'callLlmChat').mockResolvedValue('ini bukan json sama sekali')
+    await expect(parseUserIntent('halo')).rejects.toMatchObject({ kind: 'invalid_response' })
+  })
+
+  it('error non-provider tetap fallback ke smalltalk', async () => {
+    vi.spyOn(llmClient, 'callLlmChat').mockRejectedValue(new Error('kesalahan tak terduga'))
+    const result = await parseUserIntent('halo')
     expect(result.intent).toBe('smalltalk')
   })
 })

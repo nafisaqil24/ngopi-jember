@@ -290,6 +290,25 @@ describe('hooks/useChat - lokasi (F3)', () => {
     expect(lastArg.location).toBeUndefined()
   })
 
+  it('pesan error provider saat lokasi aktif tampil tanpa hint kecamatan', async () => {
+    setGeolocation({ getCurrentPosition: geoSuccess(-8.1, 113.7) })
+
+    sendMock.mockResolvedValueOnce({ reply: 'butuh lokasi', needsLocation: true })
+    sendMock.mockRejectedValueOnce(new ApiError('Chatbot lagi sibuk, coba lagi sebentar ya.'))
+
+    const { result } = renderHook(() => useChat())
+
+    await act(async () => {
+      await result.current.send('dekat sini')
+    })
+    await act(async () => {
+      await result.current.requestLocation()
+    })
+
+    expect(result.current.error).toBe('Chatbot lagi sibuk, coba lagi sebentar ya.')
+    expect(result.current.error).not.toContain('kecamatan')
+  })
+
   it('tidak loop bila balasan needsLocation padahal koordinat sudah tersimpan', async () => {
     setGeolocation({ getCurrentPosition: geoSuccess(-8.1, 113.7) })
 

@@ -5,6 +5,7 @@ import { isLlmEnabled } from './llm.client.js'
 import { parseUserIntent } from './intent.js'
 import { searchShops, getShopBySlugOrName } from './search.service.js'
 import { buildReplyMessage, CHAT_RESTING_REPLY } from './templates.js'
+import { LlmError } from './llm.errors.js'
 import { isWithinJember } from './geo.js'
 
 export const chatRouter = Router()
@@ -140,6 +141,19 @@ chatRouter.post(
         },
       })
     } catch (error: any) {
+      // Error provider LLM: kirim pesan ramah & spesifik sesuai jenis error
+      // dengan status 5xx yang sesuai. Jangan fallback ke smalltalk.
+      if (error instanceof LlmError) {
+        status = error.httpStatus
+        const duration = Date.now() - startTime
+        console.error(`[Chat] reason=llm_${error.kind} intent=${intentName} status=${status} duration=${duration}ms`)
+        return res.status(error.httpStatus).json({
+          success: false,
+          message: error.userMessage,
+          code: error.kind,
+        })
+      }
+
       status = 500
       const duration = Date.now() - startTime
       console.error(`[Chat] error intent=${intentName} status=${status} duration=${duration}ms msg=${error.message}`)

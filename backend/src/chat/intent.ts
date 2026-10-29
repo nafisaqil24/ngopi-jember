@@ -1,6 +1,7 @@
 import { buildSystemPrompt } from './prompts.js'
 import { callLlmChat, isLlmEnabled, ChatMessage } from './llm.client.js'
 import { parsedIntentSchema, ParsedIntent } from './schema.js'
+import { LlmError } from './llm.errors.js'
 import { prisma } from '../lib/prisma.js'
 
 // Buang key bernilai null secara rekursif (termasuk di dalam filters).
@@ -49,10 +50,13 @@ export async function parseUserIntent(
     } catch {
       // Fallback if markdown fenced
       const jsonMatch = rawContent.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
+      if (!jsonMatch) {
+        throw new LlmError('invalid_response')
+      }
+      try {
         parsedJson = JSON.parse(jsonMatch[0])
-      } else {
-        throw new Error('Failed to parse JSON from LLM response')
+      } catch {
+        throw new LlmError('invalid_response')
       }
     }
 
@@ -79,6 +83,12 @@ export async function parseUserIntent(
 
     return intentData
   } catch (err) {
+    // Error dari provider LLM (timeout/rate limit/auth/quota/response rusak)
+    // diteruskan ke pemanggil agar bisa dipetakan ke pesan & status yang jelas,
+    // bukan jatuh diam-diam ke smalltalk.
+    if (err instanceof LlmError) {
+      throw err
+    }
     console.error('[Intent] Error parsing intent, falling back to smalltalk:', err)
     return { intent: 'smalltalk' }
   }

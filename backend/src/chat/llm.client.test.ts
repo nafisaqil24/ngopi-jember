@@ -110,4 +110,112 @@ describe('llm.client - callLlmChat', () => {
       expect.stringContaining('message=unknown')
     )
   })
+
+  async function callAndCapture(): Promise<any> {
+    let thrown: any
+    try {
+      const { callLlmChat } = await import('./llm.client.js')
+      await callLlmChat([{ role: 'user', content: 'rahasia user' }])
+    } catch (e) {
+      thrown = e
+    }
+    return thrown
+  }
+
+  function stubOkJson(json: unknown, status = 200) {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: status >= 200 && status < 300,
+      status,
+      json: async () => json,
+    })
+    vi.stubGlobal('fetch', fetchMock)
+  }
+
+  it('melempar LlmError kind=timeout saat fetch timeout/abort', async () => {
+    vi.resetModules()
+    vi.stubEnv('LLM_API_KEY', 'test-key')
+    vi.stubEnv('LLM_MODEL', 'test-model')
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(
+        Object.assign(new Error('The operation was aborted'), { name: 'TimeoutError' })
+      )
+    vi.stubGlobal('fetch', fetchMock)
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const err = await callAndCapture()
+
+    expect(err?.kind).toBe('timeout')
+    expect(err?.httpStatus).toBe(504)
+    const allCalls = consoleErrorSpy.mock.calls.flat().join(' ')
+    expect(allCalls).toContain('kind=timeout')
+    expect(allCalls).not.toContain('Bearer')
+    expect(allCalls).not.toContain('test-key')
+    expect(allCalls).not.toContain('rahasia user')
+  })
+
+  it('melempar LlmError kind=rate_limit saat provider membalas rate limit', async () => {
+    vi.resetModules()
+    vi.stubEnv('LLM_API_KEY', 'test-key')
+    vi.stubEnv('LLM_MODEL', 'test-model')
+    stubOkJson({ error: { code: 'rate_limit_exceeded', message: 'slow down' } }, 429)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const err = await callAndCapture()
+
+    expect(err?.kind).toBe('rate_limit')
+    expect(err?.httpStatus).toBe(503)
+  })
+
+  it('melempar LlmError kind=auth saat provider membalas 401', async () => {
+    vi.resetModules()
+    vi.stubEnv('LLM_API_KEY', 'test-key')
+    vi.stubEnv('LLM_MODEL', 'test-model')
+    stubOkJson({ error: { code: 'invalid_api_key', message: 'bad key' } }, 401)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const err = await callAndCapture()
+
+    expect(err?.kind).toBe('auth')
+    expect(err?.httpStatus).toBe(503)
+  })
+
+  it('melempar LlmError kind=quota saat kuota provider habis', async () => {
+    vi.resetModules()
+    vi.stubEnv('LLM_API_KEY', 'test-key')
+    vi.stubEnv('LLM_MODEL', 'test-model')
+    stubOkJson({ error: { code: 'insufficient_quota', message: 'quota habis' } }, 402)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const err = await callAndCapture()
+
+    expect(err?.kind).toBe('quota')
+    expect(err?.httpStatus).toBe(503)
+  })
+
+  it('melempar LlmError kind=invalid_response saat konten kosong', async () => {
+    vi.resetModules()
+    vi.stubEnv('LLM_API_KEY', 'test-key')
+    vi.stubEnv('LLM_MODEL', 'test-model')
+    stubOkJson({ choices: [] }, 200)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const err = await callAndCapture()
+
+    expect(err?.kind).toBe('invalid_response')
+    expect(err?.httpStatus).toBe(502)
+  })
+
+  it('melempar LlmError kind=unknown saat provider membalas 500', async () => {
+    vi.resetModules()
+    vi.stubEnv('LLM_API_KEY', 'test-key')
+    vi.stubEnv('LLM_MODEL', 'test-model')
+    stubOkJson({ error: { code: 'server_error', message: 'oops' } }, 500)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const err = await callAndCapture()
+
+    expect(err?.kind).toBe('unknown')
+    expect(err?.httpStatus).toBe(502)
+  })
 })
