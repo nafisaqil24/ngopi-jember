@@ -50,6 +50,51 @@ describe('Intent Schema & Parser', () => {
     expect(res.success).toBe(false)
   })
 
+  it('menerima intent faq tanpa faqTopic (undefined)', () => {
+    const res = parsedIntentSchema.safeParse({ intent: 'faq' })
+    expect(res.success).toBe(true)
+    if (res.success) expect(res.data.faqTopic).toBeUndefined()
+  })
+
+  it('menormalkan faqTopic string kosong menjadi undefined', () => {
+    const res = parsedIntentSchema.safeParse({ intent: 'faq', faqTopic: '' })
+    expect(res.success).toBe(true)
+    if (res.success) expect(res.data.faqTopic).toBeUndefined()
+  })
+
+  it('menormalkan faqTopic tak dikenal menjadi undefined tanpa membuang intent', () => {
+    const res = parsedIntentSchema.safeParse({ intent: 'faq', faqTopic: 'topik_ngawur' })
+    expect(res.success).toBe(true)
+    if (res.success) {
+      expect(res.data.intent).toBe('faq')
+      expect(res.data.faqTopic).toBeUndefined()
+    }
+  })
+
+  it('mempertahankan faqTopic valid', () => {
+    const res = parsedIntentSchema.safeParse({ intent: 'faq', faqTopic: 'cara_daftar' })
+    expect(res.success).toBe(true)
+    if (res.success) expect(res.data.faqTopic).toBe('cara_daftar')
+  })
+
+  it('mempertahankan intent faq saat LLM mengisi faqTopic kosong', async () => {
+    vi.spyOn(llmClient, 'callLlmChat').mockResolvedValue(
+      JSON.stringify({ intent: 'faq', faqTopic: '' })
+    )
+    const result = await parseUserIntent('gimana cara daftar?')
+    expect(result.intent).toBe('faq')
+    expect(result.faqTopic).toBeUndefined()
+  })
+
+  it('mempertahankan intent faq dan faqTopic valid dari LLM', async () => {
+    vi.spyOn(llmClient, 'callLlmChat').mockResolvedValue(
+      JSON.stringify({ intent: 'faq', faqTopic: 'gps' })
+    )
+    const result = await parseUserIntent('cara pakai lokasi gps')
+    expect(result.intent).toBe('faq')
+    expect(result.faqTopic).toBe('gps')
+  })
+
   it('falls back to smalltalk when LLM is disabled', async () => {
     vi.spyOn(llmClient, 'isLlmEnabled').mockReturnValue(false)
     const result = await parseUserIntent('cari kedai')

@@ -47,8 +47,9 @@ export function buildReplyMessage(
   }
 
   if (intent === 'faq') {
-    if (faqTopic) {
-      return { reply: getFaqAnswer(faqTopic) }
+    const topic = typeof faqTopic === 'string' ? faqTopic.trim() : ''
+    if (topic) {
+      return { reply: getFaqAnswer(topic) }
     }
     return {
       reply: 'Ngopi Jember adalah direktori kafe dan kedai kopi di Jember. Ada yang ingin Anda tanyakan tentang cara daftar, owner, verifikasi, atau ulasan?',

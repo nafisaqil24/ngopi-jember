@@ -39,13 +39,18 @@ export const prioritiesSchema = z
   })
   .strict()
 
+// Topik FAQ kosong (""/spasi), null, atau nilai di luar enum dinormalisasi
+// menjadi undefined. Dengan begitu intent "faq" tetap dipertahankan dan
+// dirender dengan jawaban FAQ default, bukan jatuh ke smalltalk.
+export const faqTopicSchema = faqTopicsEnum.optional().catch(undefined)
+
 export const parsedIntentSchema = z
   .object({
     intent: intentEnum,
     filters: chatFiltersSchema.optional(),
     priorities: prioritiesSchema.optional(),
     shopQuery: z.string().max(100).trim().optional(),
-    faqTopic: faqTopicsEnum.optional(),
+    faqTopic: faqTopicSchema,
   })
   .strict()
 
