@@ -8,6 +8,7 @@ import { upload, uploadToCloudinaryIfNeeded } from '../middleware/upload.js'
 import { menuRouter } from './menu.routes.js'
 import { reviewRouter } from './review.routes.js'
 import { getEffectiveRating } from '../utils/rating.js'
+import { slugify } from '../utils/slug.js'
 
 export const coffeeShopRouter = Router()
 
@@ -153,10 +154,6 @@ const cardInclude = {
   _count: { select: { reviews: true } },
 } satisfies Prisma.CoffeeShopInclude
 
-function slugify(name: string) {
-  return name.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
-}
-
 async function uniqueSlug(name: string) {
   const base = slugify(name)
   let slug = base
@@ -278,7 +275,7 @@ coffeeShopRouter.get('/nearby', async (request, response, next) => {
 
 coffeeShopRouter.get('/:slug', async (request, response, next) => {
   try {
-    const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).safeParse(request.params.slug)
+    const slug = z.string().regex(/^[a-z0-9-]{1,200}$/).safeParse(request.params.slug)
     if (!slug.success) return response.status(400).json({ success: false, message: 'Slug coffee shop tidak valid' })
     const shop = await prisma.coffeeShop.findUnique({ where: { slug: slug.data }, include: { categories: { include: { category: true } }, facilities: { include: { facility: true } }, images: { orderBy: { createdAt: 'desc' } }, menus: { orderBy: { createdAt: 'asc' } }, promotions: { where: { isActive: true }, orderBy: { createdAt: 'desc' } }, reviews: { include: { user: { select: { name: true } } }, orderBy: { createdAt: 'desc' } }, subscription: true } })
     if (!shop || !shop.isVerified) return response.status(404).json({ success: false, message: 'Coffee shop tidak ditemukan' })
