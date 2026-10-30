@@ -3,7 +3,9 @@ import { z } from 'zod'
 import { chatMinuteLimiter, chatHourLimiter, checkAndIncrementDailyLimit } from './limits.js'
 import { isLlmEnabled } from './llm.client.js'
 import { parseUserIntent } from './intent.js'
-import { searchShops, getShopBySlugOrName } from './search.service.js'
+import { searchShops, getShopBySlugOrName, type SearchFilters } from './search.service.js'
+import { sanitizeHistory } from './history.js'
+import type { ParsedIntent } from './schema.js'
 import { buildReplyMessage, CHAT_RESTING_REPLY } from './templates.js'
 import { LlmError } from './llm.errors.js'
 import { isWithinJember } from './geo.js'
@@ -18,16 +20,23 @@ const chatInputSchema = z.object({
       lng: z.number().min(-180).max(180),
     })
     .optional(),
-  history: z
-    .array(
-      z.object({
-        role: z.enum(['user', 'assistant']),
-        content: z.string().min(1).max(300).trim(),
-      })
-    )
-    .max(4)
-    .optional(),
+  // History mentah diterima apa adanya lalu disanitasi di server
+  // (lihat sanitizeHistory): hanya role "user" yang boleh sampai ke LLM.
+  history: z.unknown().optional(),
 })
+
+// Argumen pencarian yang sama dipakai jalur search_shops maupun nearby,
+// supaya filter intent (fasilitas, harga, buka sekarang, dll.) tidak hilang.
+function buildSearchFilters(parsedIntent: ParsedIntent): SearchFilters {
+  const filters = parsedIntent.filters || {}
+  return {
+    district: filters.district,
+    facilitySlugs: filters.facilitySlugs,
+    maxPrice: filters.maxPrice,
+    openNow: filters.openNow,
+    priorities: parsedIntent.priorities,
+  }
+}
 
 chatRouter.post(
   '/',
@@ -89,7 +98,7 @@ chatRouter.post(
         })
       }
 
-      const parsedIntent = await parseUserIntent(message, history || [])
+      const parsedIntent = await parseUserIntent(message, sanitizeHistory(history))
       intentName = parsedIntent.intent
 
       let searchResult = undefined
@@ -97,15 +106,8 @@ chatRouter.post(
       let needsLocation = false
 
       if (parsedIntent.intent === 'search_shops') {
-        const filters = parsedIntent.filters || {}
         searchResult = await searchShops(
-          {
-            district: filters.district,
-            facilitySlugs: filters.facilitySlugs,
-            maxPrice: filters.maxPrice,
-            openNow: filters.openNow,
-            priorities: parsedIntent.priorities,
-          },
+          buildSearchFilters(parsedIntent),
           userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : undefined
         )
       } else if (parsedIntent.intent === 'nearby') {
@@ -113,7 +115,7 @@ chatRouter.post(
           needsLocation = true
         } else {
           searchResult = await searchShops(
-            { priorities: parsedIntent.priorities },
+            buildSearchFilters(parsedIntent),
             { lat: userLocation.lat, lng: userLocation.lng, radiusKm: 25 }
           )
         }
@@ -156,8 +158,14 @@ chatRouter.post(
 
       status = 500
       const duration = Date.now() - startTime
+      // Detail error tetap dicatat di server, tetapi TIDAK diteruskan ke klien
+      // (path file/nama tabel/potongan query Prisma bisa membocorkan internal).
       console.error(`[Chat] error intent=${intentName} status=${status} duration=${duration}ms msg=${error.message}`)
-      return next(error)
+      return res.status(status).json({
+        success: false,
+        message: 'Maaf, ada gangguan di server. Coba lagi sebentar ya.',
+        code: 'internal_error',
+      })
     }
   }
 )

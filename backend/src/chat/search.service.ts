@@ -4,6 +4,7 @@ import { parsePriceRange, getOpenStatus } from './parsers.js'
 import { calculateDistance } from './geo.js'
 import { calculateSAW, PriorityLevel, SawCriterion } from './saw.service.js'
 import { getEffectiveRating } from '../utils/rating.js'
+import { withDbRetry } from '../utils/dbRetry.js'
 
 export interface SearchFilters {
   district?: string
@@ -94,34 +95,36 @@ export interface SearchResponse {
 }
 
 async function executeSearch(filters: SearchFilters, userLocation?: UserLocation) {
-  const allVerifiedShops = await prisma.coffeeShop.findMany({
-    where: {
-      isVerified: true,
-      ...(filters.district
-        ? { district: { contains: filters.district.trim(), mode: 'insensitive' } }
-        : {}),
-      ...(filters.searchQuery
-        ? {
-            OR: [
-              { name: { contains: filters.searchQuery, mode: 'insensitive' } },
-              { description: { contains: filters.searchQuery, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
-      ...(filters.facilitySlugs && filters.facilitySlugs.length > 0
-        ? {
-            facilities: {
-              some: {
-                facility: {
-                  slug: { in: filters.facilitySlugs },
+  const allVerifiedShops = await withDbRetry(() =>
+    prisma.coffeeShop.findMany({
+      where: {
+        isVerified: true,
+        ...(filters.district
+          ? { district: { contains: filters.district.trim(), mode: 'insensitive' } }
+          : {}),
+        ...(filters.searchQuery
+          ? {
+              OR: [
+                { name: { contains: filters.searchQuery, mode: 'insensitive' } },
+                { description: { contains: filters.searchQuery, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+        ...(filters.facilitySlugs && filters.facilitySlugs.length > 0
+          ? {
+              facilities: {
+                some: {
+                  facility: {
+                    slug: { in: filters.facilitySlugs },
+                  },
                 },
               },
-            },
-          }
-        : {}),
-    },
-    select: publicShopSelect,
-  })
+            }
+          : {}),
+      },
+      select: publicShopSelect,
+    })
+  )
 
   const totalKedaiTerverifikasi = allVerifiedShops.length
   let jumlahTanpaDataHarga = 0
@@ -297,16 +300,18 @@ export async function searchShops(
 
 export async function getShopBySlugOrName(query: string): Promise<PublicShopResult | null> {
   const q = query.trim()
-  const shop = await prisma.coffeeShop.findFirst({
-    where: {
-      isVerified: true,
-      OR: [
-        { slug: { equals: q, mode: 'insensitive' } },
-        { name: { contains: q, mode: 'insensitive' } },
-      ],
-    },
-    select: publicShopSelect,
-  })
+  const shop = await withDbRetry(() =>
+    prisma.coffeeShop.findFirst({
+      where: {
+        isVerified: true,
+        OR: [
+          { slug: { equals: q, mode: 'insensitive' } },
+          { name: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      select: publicShopSelect,
+    })
+  )
 
   if (!shop) return null
 
