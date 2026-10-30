@@ -21,7 +21,8 @@
     "prisma:cleanup-uji": "tsx prisma/cleanup-uji.ts",
     "db:create-admin": "tsx prisma/create-admin.ts",
     "check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "eval:intent": "tsx src/eval/intent-eval.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

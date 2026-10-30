@@ -1,8 +1,31 @@
 import { buildSystemPrompt } from './prompts.js'
 import { callLlmChat, isLlmEnabled, ChatMessage } from './llm.client.js'
-import { parsedIntentSchema, ParsedIntent } from './schema.js'
+import { parsedIntentSchema, intentEnum, ParsedIntent } from './schema.js'
 import { LlmError } from './llm.errors.js'
 import { prisma } from '../lib/prisma.js'
+import { withDbRetry } from '../utils/dbRetry.js'
+
+const KNOWN_INTENT_VALUES = new Set<string>(intentEnum.options)
+
+// Intent mentah hanya dicatat bila berupa string pendek dan dikenal. Selain itu
+// "unknown" supaya log tidak memuat output LLM utuh.
+function shortRawIntent(parsedJson: unknown): string {
+  if (!parsedJson || typeof parsedJson !== 'object') return 'unknown'
+  const raw = (parsedJson as { intent?: unknown }).intent
+  if (typeof raw !== 'string') return 'unknown'
+  const trimmed = raw.trim()
+  if (trimmed.length === 0 || trimmed.length > 40) return 'unknown'
+  return KNOWN_INTENT_VALUES.has(trimmed) ? trimmed : 'unknown'
+}
+
+function formatZodIssues(issues: { path: PropertyKey[]; code: string }[]): string {
+  return issues
+    .map((issue) => {
+      const path = issue.path.join('.')
+      return path ? `${path}:${issue.code}` : issue.code
+    })
+    .join(',')
+}
 
 // Buang key bernilai null secara rekursif (termasuk di dalam filters).
 // Model (mis. gpt-oss) sering mengisi "shopQuery": null / "faqTopic": null,
@@ -28,6 +51,7 @@ export async function parseUserIntent(
   history: { role: 'user' | 'assistant'; content: string }[] = []
 ): Promise<ParsedIntent> {
   if (!isLlmEnabled()) {
+    console.warn('[Intent] reason=llm_disabled')
     return {
       intent: 'smalltalk',
     }
@@ -64,6 +88,10 @@ export async function parseUserIntent(
     const normalizedJson = stripNullKeys(parsedJson)
     const validationResult = parsedIntentSchema.safeParse(normalizedJson)
     if (!validationResult.success) {
+      const issues = validationResult.error.issues
+      console.warn(
+        `[Intent] reason=zod_invalid raw_intent=${shortRawIntent(parsedJson)} issues=${issues.length} issue_paths=${formatZodIssues(issues)}`
+      )
       return { intent: 'smalltalk' }
     }
 
@@ -71,7 +99,9 @@ export async function parseUserIntent(
 
     // Sanitize facilitySlugs against DB master facilities
     if (intentData.filters?.facilitySlugs) {
-      const validFacilities = await prisma.facility.findMany({ select: { slug: true } })
+      const validFacilities = await withDbRetry(() =>
+        prisma.facility.findMany({ select: { slug: true } })
+      )
       const validSlugs = new Set(validFacilities.map((f) => f.slug))
       intentData.filters.facilitySlugs = intentData.filters.facilitySlugs.filter((slug) =>
         validSlugs.has(slug)
@@ -89,7 +119,9 @@ export async function parseUserIntent(
     if (err instanceof LlmError) {
       throw err
     }
-    console.error('[Intent] Error parsing intent, falling back to smalltalk:', err)
+    const errName = err instanceof Error ? err.name : 'unknown'
+    const errMessage = err instanceof Error ? err.message.slice(0, 200) : String(err).slice(0, 200)
+    console.error(`[Intent] reason=unexpected_error name=${errName} msg=${errMessage}`)
     return { intent: 'smalltalk' }
   }
 }
