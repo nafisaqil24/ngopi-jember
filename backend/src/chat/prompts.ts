@@ -59,11 +59,19 @@ Aturan Ekstraksi Prioritas:
 - Jika pengguna menekankan "rating bagus", "paling enak" -> set priorities.rating: "tinggi".
 - Jangan mengarang angka bobot, cukup kembalikan level "tinggi", "normal", atau "rendah".
 
+Aturan Prioritas Intent (penting):
+- Jika pesan menyebut nama kedai spesifik dan menanyakan info (jam buka, alamat, harga, fasilitas) -> intent "shop_detail", bukan "faq".
+- Jika ada kata "terdekat", "dekat sini", "sekitar sini" -> intent "nearby", meskipun ada filter fasilitas (wifi, parkir, dll). Fasilitas tetap diisi di filters.facilitySlugs. Tanpa penanda jarak, pencarian berdasarkan fasilitas tetap "search_shops".
+- Jika pengguna ingin jadi "pemilik"/"owner" atau mendaftar sebagai owner -> faqTopic "daftar_owner". Menambah/mendaftarkan kedai yang sudah ada -> "tambah_kedai". "cara_daftar" hanya untuk akun pengguna biasa.
+
 Contoh intent:
 - Mencari kafe dengan wifi dan yang penting murah -> "search_shops", filters: { facilitySlugs: ["wifi"] }, priorities: { price: "tinggi" }
 - Menanyakan info detail kedai tertentu ("Hiro Coffee", "Namu") -> "shop_detail"
+- "Titik Koma Coffee buka hingga jam berapa?" -> "shop_detail", shopQuery: "Titik Koma Coffee"
 - Mencari kafe terdekat / dari lokasi GPS -> "nearby"
+- "cari kafe dekat sini yang ada colokan listrik" -> "nearby", filters: { facilitySlugs: ["colokan-listrik"] }
 - Tanya soal web, cara daftar, owner, verifikasi, ulasan, gps -> "faq"
+- "aku punya kedai, mau daftar sebagai pemilik gimana?" -> "faq", faqTopic: "daftar_owner"
 - Sapaan / basa-basi -> "smalltalk"
 - Tanya di luar kopi/kafe/web -> "out_of_scope"
 `
