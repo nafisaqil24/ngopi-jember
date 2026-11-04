@@ -13,10 +13,18 @@ import {
 const DEFAULT_DELAY_MS = 2500
 const RATE_LIMIT_WAIT_MS = 15000
 
+type IntentDatasetName = 'tuning' | 'heldout'
+
+const DATASET_FILES: Record<IntentDatasetName, string> = {
+  tuning: 'src/eval/intent-dataset.json',
+  heldout: 'src/eval/intent-dataset-heldout.json',
+}
+
 interface CliOptions {
   dry: boolean
   json: boolean
   delayMs: number
+  set: IntentDatasetName
 }
 
 interface EvalItemResult {
@@ -41,13 +49,18 @@ interface CategoryStats {
 }
 
 function parseArgs(argv: string[]): CliOptions {
-  const options: CliOptions = { dry: false, json: false, delayMs: DEFAULT_DELAY_MS }
+  const options: CliOptions = { dry: false, json: false, delayMs: DEFAULT_DELAY_MS, set: 'tuning' }
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i]
     if (arg === '--dry') {
       options.dry = true
     } else if (arg === '--json') {
       options.json = true
+    } else if (arg === '--set') {
+      options.set = parseDatasetName(argv[i + 1])
+      i += 1
+    } else if (arg.startsWith('--set=')) {
+      options.set = parseDatasetName(arg.slice('--set='.length))
     } else if (arg === '--delay') {
       const value = Number(argv[i + 1])
       if (!Number.isFinite(value) || value < 0) throw new Error('--delay harus berupa angka >= 0')
@@ -64,12 +77,17 @@ function parseArgs(argv: string[]): CliOptions {
   return options
 }
 
+function parseDatasetName(value: string | undefined): IntentDatasetName {
+  if (value === 'tuning' || value === 'heldout') return value
+  throw new Error(`--set tidak valid: ${String(value)} (pilih: tuning, heldout)`)
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function loadDataset(): unknown {
-  const datasetPath = path.resolve(process.cwd(), 'src/eval/intent-dataset.json')
+function loadDataset(setName: IntentDatasetName): unknown {
+  const datasetPath = path.resolve(process.cwd(), DATASET_FILES[setName])
   if (!fs.existsSync(datasetPath)) {
     throw new Error(`Dataset tidak ditemukan: ${datasetPath}`)
   }
@@ -238,7 +256,7 @@ async function main(): Promise<void> {
   try {
     await runTestEnvGuard()
 
-    const rawDataset = loadDataset()
+    const rawDataset = loadDataset(options.set)
     const validation = validateIntentDataset(rawDataset)
 
     if (!validation.ok) {
