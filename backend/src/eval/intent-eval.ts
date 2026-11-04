@@ -117,7 +117,9 @@ async function captureIntentLogs<T>(
   const wrap = (original: (...args: any[]) => void) =>
     (...args: any[]) => {
       const line = args.map((arg) => (typeof arg === 'string' ? arg : String(arg))).join(' ')
-      if (line.includes('[Intent]')) logs.push(line)
+      // Simpan log intent (fallback) dan log error provider (untuk membedakan
+      // limit harian vs per menit). [Intent] tetap difilter di extractFallbackReason.
+      if (line.includes('[Intent]') || line.includes('[LLM] provider error')) logs.push(line)
       original(...args)
     }
 
@@ -135,10 +137,34 @@ async function captureIntentLogs<T>(
 
 function extractFallbackReason(logs: string[]): string | null {
   for (let i = logs.length - 1; i >= 0; i -= 1) {
+    if (!logs[i].includes('[Intent]')) continue
     const match = logs[i].match(/reason=([a-z_]+)/)
     if (match) return match[1]
   }
   return null
+}
+
+// Membedakan rate limit per menit (TPM, boleh retry) dari limit harian
+// (TPD/RPD, harus menghentikan run). Memakai teks pesan provider karena
+// code untuk keduanya sama-sama "rate_limit_exceeded".
+export function isDailyLimitMessage(text: string): boolean {
+  const lower = text.toLowerCase()
+  return (
+    lower.includes('token per day') ||
+    lower.includes('tokens per day') ||
+    /\btpd\b/.test(lower) ||
+    lower.includes('request per day') ||
+    lower.includes('requests per day') ||
+    /\brpd\b/.test(lower) ||
+    lower.includes('daily limit') ||
+    lower.includes('limit harian')
+  )
+}
+
+export function logsIndicateDailyLimit(logs: string[]): boolean {
+  return logs.some(
+    (line) => line.includes('[LLM] provider error') && isDailyLimitMessage(line)
+  )
 }
 
 function percent(part: number, total: number): number {
@@ -238,6 +264,7 @@ function buildJsonReport(results: EvalItemResult[], stoppedReason: string | null
 
   return {
     meta: {
+      valid: true,
       total,
       intentCorrect,
       fullCorrect,
@@ -251,6 +278,28 @@ function buildJsonReport(results: EvalItemResult[], stoppedReason: string | null
     errors: results.filter((result) => !result.fullCorrect),
     results,
   }
+}
+
+// Run yang berhenti karena limit harian provider TIDAK dianggap hasil: tidak
+// ada angka akurasi, meta.valid=false, dan exit code non-nol.
+function buildInvalidJsonReport(results: EvalItemResult[], reason: string) {
+  return {
+    meta: {
+      valid: false,
+      reason,
+      total: results.length,
+    },
+    errors: results.filter((result) => !result.fullCorrect),
+    results,
+  }
+}
+
+function printInvalidRun(reason: string): void {
+  console.log('')
+  console.log('=== Evaluasi Akurasi Intent Chatbot ===')
+  console.log('RUN TIDAK VALID: limit harian provider habis')
+  console.log(`Alasan : ${reason}`)
+  console.log('Akurasi tidak dihitung. Ulangi eval setelah kuota harian provider pulih.')
 }
 
 async function main(): Promise<void> {
@@ -315,6 +364,7 @@ async function main(): Promise<void> {
 
     const results: EvalItemResult[] = []
     let stoppedReason: string | null = null
+    let invalidRunReason: string | null = null
 
     try {
       for (let i = 0; i < dataset.length; i += 1) {
@@ -322,6 +372,18 @@ async function main(): Promise<void> {
         console.error(`[eval] ${i + 1}/${dataset.length} ${item.id}`)
 
         let outcome = await captureIntentLogs(() => parseUserIntent(item.text, []))
+
+        // Limit harian (TPD/RPD) tidak akan pulih dengan menunggu 15 detik:
+        // hentikan run dan tandai tidak valid. Limit per menit (TPM) tetap di-retry.
+        if (
+          outcome.error instanceof LlmError &&
+          outcome.error.kind === 'rate_limit' &&
+          logsIndicateDailyLimit(outcome.logs)
+        ) {
+          invalidRunReason = 'daily_limit'
+          console.error('[eval] RUN TIDAK VALID: limit harian provider habis')
+          break
+        }
 
         if (outcome.error instanceof LlmError && outcome.error.kind === 'rate_limit') {
           console.error(`[eval] rate_limit pada ${item.id}; menunggu 15 detik lalu mencoba sekali lagi...`)
@@ -386,7 +448,16 @@ async function main(): Promise<void> {
       await prisma.$disconnect().catch(() => {})
     }
 
-    if (options.json) {
+    if (invalidRunReason) {
+      // Jangan tampilkan angka akurasi untuk run yang tidak valid.
+      if (options.json) {
+        console.error('[eval] RUN TIDAK VALID: limit harian provider habis')
+        process.stdout.write(JSON.stringify(buildInvalidJsonReport(results, invalidRunReason), null, 2) + '\n')
+      } else {
+        printInvalidRun(invalidRunReason)
+      }
+      process.exitCode = 1
+    } else if (options.json) {
       process.stdout.write(JSON.stringify(buildJsonReport(results, stoppedReason), null, 2) + '\n')
     } else {
       printHumanReport(results, stoppedReason)
@@ -396,8 +467,13 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error) => {
-  const message = error instanceof Error ? error.message : String(error)
-  console.error(`[eval] Gagal: ${message}`)
-  process.exitCode = 1
-})
+// Jalankan main() hanya saat file ini dieksekusi langsung, bukan saat diimpor
+// oleh test (agar helper bisa diuji tanpa memanggil provider/dataset).
+const directRunPattern = /intent-eval\.[cm]?[jt]s$/
+if (typeof process.argv[1] === 'string' && directRunPattern.test(process.argv[1])) {
+  main().catch((error) => {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`[eval] Gagal: ${message}`)
+    process.exitCode = 1
+  })
+}
