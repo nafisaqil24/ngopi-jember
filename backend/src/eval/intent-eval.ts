@@ -37,6 +37,7 @@ interface EvalItemResult {
   fullCorrect: boolean
   failures: string[]
   fallbackReason: string | null
+  handledByFallback: boolean
   errorKind: string | null
 }
 
@@ -152,6 +153,7 @@ function aggregate(results: EvalItemResult[]): {
   const fallbackReasons: Record<string, number> = {
     llm_disabled: 0,
     zod_invalid: 0,
+    json_validate_failed: 0,
     unexpected_error: 0,
     smalltalk_no_fallback: 0,
   }
@@ -188,13 +190,15 @@ function printHumanReport(results: EvalItemResult[], stoppedReason: string | nul
   const total = results.length
   const intentCorrect = results.filter((result) => result.intentCorrect).length
   const fullCorrect = results.filter((result) => result.fullCorrect).length
+  const handledByFallback = results.filter((result) => result.handledByFallback).length
   const { byCategory, fallbackReasons } = aggregate(results)
 
   console.log('')
   console.log('=== Evaluasi Akurasi Intent Chatbot ===')
   console.log(`Total kalimat dieksekusi : ${total}`)
-  console.log(`Akurasi intent           : ${percent(intentCorrect, total)}% (${intentCorrect}/${total})`)
+  console.log(`Akurasi intent (ketat)   : ${percent(intentCorrect, total)}% (${intentCorrect}/${total})`)
   console.log(`Akurasi penuh            : ${percent(fullCorrect, total)}% (${fullCorrect}/${total})`)
+  console.log(`Tertangani fallback aman : ${handledByFallback} item (handled_by_fallback)`)
   if (stoppedReason) console.log(`Dihentikan karena        : ${stoppedReason}`)
   console.log('')
   console.log('Per kategori:')
@@ -219,6 +223,9 @@ function printHumanReport(results: EvalItemResult[], stoppedReason: string | nul
     console.log(`  actual   : ${failure.actual ? JSON.stringify(failure.actual) : 'null'}`)
     console.log(`  gagal    : ${failure.failures.join('; ') || '-'}`)
     console.log(`  fallback : ${failure.fallbackReason ?? '(tidak ada log [Intent])'}`)
+    if (failure.handledByFallback) {
+      console.log(`  status   : handled_by_fallback (fallback aman ke out_of_scope)`)
+    }
   }
 }
 
@@ -226,6 +233,7 @@ function buildJsonReport(results: EvalItemResult[], stoppedReason: string | null
   const total = results.length
   const intentCorrect = results.filter((result) => result.intentCorrect).length
   const fullCorrect = results.filter((result) => result.fullCorrect).length
+  const handledByFallback = results.filter((result) => result.handledByFallback).length
   const { byCategory, fallbackReasons } = aggregate(results)
 
   return {
@@ -233,6 +241,7 @@ function buildJsonReport(results: EvalItemResult[], stoppedReason: string | null
       total,
       intentCorrect,
       fullCorrect,
+      handledByFallback,
       intentAccuracy: percent(intentCorrect, total),
       fullAccuracy: percent(fullCorrect, total),
       stoppedReason,
@@ -328,18 +337,30 @@ async function main(): Promise<void> {
         }
 
         const fallbackReason = extractFallbackReason(outcome.logs)
+        const handledByFallback = fallbackReason === 'json_validate_failed'
         if (outcome.result) {
           const score = scorePrediction(item.expect, outcome.result)
+          const failures = [...score.failures]
+          let intentCorrect = score.intentCorrect
+          let fullCorrect = score.fullCorrect
+          if (handledByFallback) {
+            // Fallback aman bukan hasil klasifikasi nyata: tetap dihitung salah
+            // di akurasi ketat, tetapi ditandai agar bisa dibedakan.
+            intentCorrect = false
+            fullCorrect = false
+            failures.push('handled_by_fallback: json_validate_failed')
+          }
           results.push({
             id: item.id,
             category: item.category,
             text: item.text,
             expected: item.expect,
             actual: outcome.result,
-            intentCorrect: score.intentCorrect,
-            fullCorrect: score.fullCorrect,
-            failures: score.failures,
+            intentCorrect,
+            fullCorrect,
+            failures,
             fallbackReason,
+            handledByFallback,
             errorKind: null,
           })
         } else {
@@ -354,6 +375,7 @@ async function main(): Promise<void> {
             fullCorrect: false,
             failures: [`error: ${errorKind}`],
             fallbackReason,
+            handledByFallback,
             errorKind,
           })
         }

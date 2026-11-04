@@ -117,6 +117,14 @@ export async function parseUserIntent(
     // diteruskan ke pemanggil agar bisa dipetakan ke pesan & status yang jelas,
     // bukan jatuh diam-diam ke smalltalk.
     if (err instanceof LlmError) {
+      // Provider menolak output model karena bukan JSON valid (mis. input
+      // prompt injection). Ini kegagalan klasifikasi yang aman ditangani:
+      // kembalikan out_of_scope agar user mendapat penolakan sopan, bukan 502.
+      // Deteksi memakai field code, bukan pencocokan teks pesan.
+      if (err.providerCode === 'json_validate_failed') {
+        console.warn('[Intent] reason=json_validate_failed')
+        return { intent: 'out_of_scope' }
+      }
       throw err
     }
     const errName = err instanceof Error ? err.name : 'unknown'
