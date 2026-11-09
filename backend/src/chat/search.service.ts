@@ -94,6 +94,27 @@ export interface SearchResponse {
   }
 }
 
+export function computeDistanceMetrics(
+  userLocation: UserLocation | undefined,
+  shop: { latitude: number | null; longitude: number | null }
+): { distanceKm?: number; distanceKmRaw?: number } {
+  if (!userLocation || shop.latitude === null || shop.longitude === null) {
+    return {}
+  }
+
+  const distanceKmRaw = calculateDistance(
+    userLocation.lat,
+    userLocation.lng,
+    shop.latitude,
+    shop.longitude
+  )
+
+  return {
+    distanceKm: Math.round(distanceKmRaw * 10) / 10,
+    distanceKmRaw,
+  }
+}
+
 async function executeSearch(filters: SearchFilters, userLocation?: UserLocation) {
   const allVerifiedShops = await withDbRetry(() =>
     prisma.coffeeShop.findMany({
@@ -133,6 +154,8 @@ async function executeSearch(filters: SearchFilters, userLocation?: UserLocation
 
   const now = new Date()
 
+  const rawDistanceBySlug = new Map<string, number>()
+
   const processed: PublicShopResult[] = allVerifiedShops.map((shop) => {
     const priceParsed = parsePriceRange(shop.priceRange)
     if (!priceParsed) jumlahTanpaDataHarga++
@@ -152,12 +175,9 @@ async function executeSearch(filters: SearchFilters, userLocation?: UserLocation
         ? shop.description.slice(0, 157) + '...'
         : shop.description
 
-    let distanceKm: number | undefined = undefined
-    if (userLocation && shop.latitude !== null && shop.longitude !== null) {
-      distanceKm =
-        Math.round(
-          calculateDistance(userLocation.lat, userLocation.lng, shop.latitude, shop.longitude) * 10
-        ) / 10
+    const { distanceKm, distanceKmRaw } = computeDistanceMetrics(userLocation, shop)
+    if (distanceKmRaw !== undefined) {
+      rawDistanceBySlug.set(shop.slug, distanceKmRaw)
     }
 
     return {
@@ -220,7 +240,7 @@ async function executeSearch(filters: SearchFilters, userLocation?: UserLocation
 
     return {
       slug: shop.slug,
-      distanceKm: shop.distanceKm,
+      distanceKm: rawDistanceBySlug.get(shop.slug),
       priceMidpoint,
       rating: shop.rating,
       facilityCount: shop.facilities.length,
