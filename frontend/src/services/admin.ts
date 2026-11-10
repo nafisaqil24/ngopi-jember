@@ -1,3 +1,5 @@
+import type { OpeningHourEntry, OpenStatus } from "../types/coffeeShop";
+
 const apiUrl = import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '/api' : 'http://localhost:4000/api');
 
 export type ApiAdminShop = {
@@ -11,6 +13,9 @@ export type ApiAdminShop = {
   isVerified: boolean;
   isFeatured: boolean;
   createdAt: string;
+  openingHours?: string;
+  openingHourEntries?: OpeningHourEntry[];
+  openStatus?: OpenStatus;
   owner: { id: string; name: string; email: string };
   _count: { reviews: number; menus: number };
 };
@@ -43,6 +48,8 @@ export type ApiAdminShopDetail = {
   googleRating: number | null;
   googleReviewCount: number | null;
   googleRatingAt: string | null;
+  openingHourEntries?: OpeningHourEntry[];
+  openStatus?: OpenStatus;
   owner: { id: string; name: string; email: string };
   categories: { category: { id: string; name: string; slug: string } }[];
   facilities: { facility: { id: string; name: string; slug: string } }[];
@@ -129,6 +136,7 @@ export type AdminShopUpdateInput = {
   district?: string;
   priceRange?: string;
   openingHours?: string;
+  openingHourEntries?: OpeningHourEntry[];
   phone?: string;
   instagram?: string;
   status?: "OPEN" | "CLOSED" | "TEMPORARILY_CLOSED";
@@ -147,6 +155,9 @@ export async function updateAdminCoffeeShop(token: string, shopId: string, input
   if (input.district !== undefined) formData.set("district", input.district);
   if (input.priceRange !== undefined) formData.set("priceRange", input.priceRange);
   if (input.openingHours !== undefined) formData.set("openingHours", input.openingHours);
+  if (input.openingHourEntries !== undefined) {
+    formData.set("openingHourEntries", JSON.stringify(input.openingHourEntries));
+  }
   if (input.phone !== undefined) formData.set("phone", input.phone);
   if (input.instagram !== undefined) formData.set("instagram", input.instagram);
   if (input.status !== undefined) formData.set("status", input.status);

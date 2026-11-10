@@ -4,7 +4,14 @@ import MainLayout from "../../layouts/MainLayout";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import GoogleRatingPanel, { type GoogleRatingInput } from "../../components/admin/GoogleRatingPanel";
+import OpeningHoursEditor from "../../components/OpeningHoursEditor";
 import { getImageUrl, listCategories, listFacilities, type ApiFacility } from "../../services/coffeeShop";
+import {
+  defaultWeeklyOpeningHours,
+  openingHoursEntriesOrDefault,
+  validateOpeningHoursEntries,
+} from "../../utils/openingHours";
+import type { OpeningHourEntry } from "../../types/coffeeShop";
 import {
   getAdminCoffeeShop,
   updateAdminCoffeeShop,
@@ -44,7 +51,9 @@ export default function AdminCoffeeShopEdit() {
   const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
   const [district, setDistrict] = useState("Sumbersari");
-  const [openingHours, setOpeningHours] = useState("");
+  const [openingHourEntries, setOpeningHourEntries] = useState<OpeningHourEntry[]>(
+    defaultWeeklyOpeningHours
+  );
   const [priceRange, setPriceRange] = useState("");
   const [status, setStatus] = useState<ShopStatus>("OPEN");
   const [phone, setPhone] = useState("");
@@ -93,7 +102,9 @@ export default function AdminCoffeeShopEdit() {
       setDescription(data.description);
       setAddress(data.address);
       setDistrict(data.district);
-      setOpeningHours(data.openingHours);
+      setOpeningHourEntries(
+        openingHoursEntriesOrDefault(data.openingHourEntries, data.openingHours)
+      );
       setPriceRange(data.priceRange);
       setStatus(data.status);
       setPhone(data.phone || "");
@@ -169,6 +180,12 @@ export default function AdminCoffeeShopEdit() {
       toast.error(message);
       return;
     }
+    const hoursError = validateOpeningHoursEntries(openingHourEntries);
+    if (hoursError) {
+      setSaveError(hoursError);
+      toast.error(hoursError);
+      return;
+    }
     setSaving(true);
     setSaveError("");
 
@@ -179,7 +196,7 @@ export default function AdminCoffeeShopEdit() {
         address,
         district,
         priceRange,
-        openingHours,
+        openingHourEntries,
         phone,
         instagram,
         status,
@@ -446,14 +463,11 @@ export default function AdminCoffeeShopEdit() {
                     className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-3 text-sm outline-none focus:border-terracotta"
                   />
                 </div>
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-espresso/70">Jam Operasional *</label>
-                  <input
-                    type="text"
-                    required
-                    value={openingHours}
-                    onChange={(e) => setOpeningHours(e.target.value)}
-                    className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-3 text-sm outline-none focus:border-terracotta"
+                <div className="sm:col-span-2">
+                  <OpeningHoursEditor
+                    value={openingHourEntries}
+                    onChange={setOpeningHourEntries}
+                    disabled={saving}
                   />
                 </div>
                 <div>

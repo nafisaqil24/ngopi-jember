@@ -5,6 +5,15 @@
 // sudah siap, kita tinggal mengganti sumber data tanpa mengubah banyak
 // komponen.
 
+export interface OpeningHourEntry {
+  dayOfWeek: number; // 0 = Minggu ... 6 = Sabtu
+  open: string; // "HH:MM"
+  close: string; // "HH:MM"
+  isClosed: boolean;
+}
+
+export type OpenStatus = "buka" | "tutup" | "tidak_diketahui";
+
 export interface CoffeeShop {
   id: string;
   slug: string;
@@ -20,6 +29,8 @@ export interface CoffeeShop {
   imageUrl: string;
   isFeatured: boolean;
   isOpenNow: boolean;
-  openStatus?: "buka" | "tutup" | "tidak_diketahui";
+  openStatus?: OpenStatus;
+  openingHours?: string;
+  openingHourEntries?: OpeningHourEntry[];
   distance?: number;
 }

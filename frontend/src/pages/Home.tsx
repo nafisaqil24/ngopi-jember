@@ -8,7 +8,11 @@ import { getEffectiveOpenStatus } from "../utils/openStatus";
 import type { CoffeeShop } from "../types/coffeeShop";
 
 function mapToCoffeeShop(item: ApiCoffeeShopCard): CoffeeShop {
-  const openStatus = getEffectiveOpenStatus(item.openingHours, item.status);
+  const openStatus = getEffectiveOpenStatus({
+    status: item.status,
+    openingHourEntries: item.openingHourEntries,
+    openingHours: item.openingHours,
+  });
   return {
     id: item.id,
     slug: item.slug,

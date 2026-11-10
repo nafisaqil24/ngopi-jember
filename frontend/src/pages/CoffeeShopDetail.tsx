@@ -6,7 +6,8 @@ import MainLayout from "../layouts/MainLayout";
 import { getCoffeeShopBySlug, getImageUrl, createReview, trackEvent, ApiError, type ApiCoffeeShopDetail } from "../services/coffeeShop";
 import { useAuth } from "../hooks/useAuth";
 import { formatGoogleRatingLabel, formatRating, hasRating } from "../utils/rating";
-import { getEffectiveOpenStatus } from "../utils/openStatus";
+import { getEffectiveOpenStatus, getTodayDayOfWeekJakarta } from "../utils/openStatus";
+import { DAY_DISPLAY_ORDER, formatDayName } from "../utils/openingHours";
 import { normalizeWhatsAppNumber } from "../utils/phone";
 import NotFound from "./NotFound";
 
@@ -210,7 +211,16 @@ export default function CoffeeShopDetail() {
   const whatsappUrl = buildWhatsappUrl(shop.phone);
   const instagramUrl = buildInstagramUrl(shop.instagram);
   const ratingAvailable = hasRating(shop.rating, shop.reviewCount, shop.ratingSource);
-  const openStatus = getEffectiveOpenStatus(shop.openingHours, shop.status);
+  const openStatus = getEffectiveOpenStatus({
+    status: shop.status,
+    openingHourEntries: shop.openingHourEntries,
+    openingHours: shop.openingHours,
+  });
+  const todayDayOfWeek = getTodayDayOfWeekJakarta();
+  const schedule = DAY_DISPLAY_ORDER.flatMap((dayOfWeek) => {
+    const entry = shop.openingHourEntries?.find((item) => item.dayOfWeek === dayOfWeek);
+    return entry ? [entry] : [];
+  });
 
   return (
     <MainLayout>
@@ -261,13 +271,39 @@ export default function CoffeeShopDetail() {
 
             <h2 className="text-base font-black text-heading">Informasi lokasi</h2>
             <dl className="mt-4 grid gap-4 text-sm">
-              <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-terracotta text-terracotta">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-terracotta text-terracotta">
                   <IconClock className="h-4 w-4" />
                 </span>
-                <div>
+                <div className="min-w-0 flex-1">
                   <dt className="text-xs font-medium text-muted">Jam operasional</dt>
-                  <dd className="font-bold text-heading">{shop.openingHours}</dd>
+                  {schedule.length > 0 ? (
+                    <dd className="mt-1.5 space-y-0.5">
+                      {schedule.map((entry) => {
+                        const isToday = entry.dayOfWeek === todayDayOfWeek;
+                        return (
+                          <div
+                            key={entry.dayOfWeek}
+                            className={`flex items-center justify-between gap-3 rounded-lg px-2 py-1 text-xs ${
+                              isToday
+                                ? "bg-accent-soft font-bold text-terracotta-strong"
+                                : "font-medium text-body"
+                            }`}
+                          >
+                            <span>
+                              {formatDayName(entry.dayOfWeek)}
+                              {isToday ? " (hari ini)" : ""}
+                            </span>
+                            <span className="tabular-nums">
+                              {entry.isClosed ? "Tutup" : `${entry.open} - ${entry.close}`}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </dd>
+                  ) : (
+                    <dd className="font-bold text-heading">{shop.openingHours}</dd>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3">

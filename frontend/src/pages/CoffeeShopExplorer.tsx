@@ -22,7 +22,11 @@ const JEMBER_DISTRICT_COORDS: Record<string, { lat: number; lng: number }> = {
 };
 
 function mapToCoffeeShop(item: ApiCoffeeShopCard): CoffeeShop {
-  const openStatus = getEffectiveOpenStatus(item.openingHours, item.status);
+  const openStatus = getEffectiveOpenStatus({
+    status: item.status,
+    openingHourEntries: item.openingHourEntries,
+    openingHours: item.openingHours,
+  });
   return {
     id: item.id,
     slug: item.slug,
@@ -43,7 +47,11 @@ function mapToCoffeeShop(item: ApiCoffeeShopCard): CoffeeShop {
 }
 
 function mapNearbyToCoffeeShop(item: NearbyCoffeeShop): CoffeeShop {
-  const openStatus = getEffectiveOpenStatus(item.openingHours, item.status);
+  const openStatus = getEffectiveOpenStatus({
+    status: item.status,
+    openingHourEntries: item.openingHourEntries,
+    openingHours: item.openingHours,
+  });
   return {
     id: item.id,
     slug: item.slug,

@@ -1,3 +1,5 @@
+import type { OpeningHourEntry, OpenStatus } from "../types/coffeeShop";
+
 export const apiUrl = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '/api' : 'http://localhost:4000/api');
 
 type ApiResponse<T> =
@@ -23,6 +25,8 @@ export type ApiCoffeeShopCard = {
   isFeatured: boolean;
   status: "OPEN" | "CLOSED" | "TEMPORARILY_CLOSED";
   openingHours?: string;
+  openingHourEntries?: OpeningHourEntry[];
+  openStatus?: OpenStatus;
   image: string | null;
   facilities: ApiFacility[];
   rating: number | null;
@@ -31,7 +35,7 @@ export type ApiCoffeeShopCard = {
 };
 
 export type ApiCoffeeShopDetail = Omit<ApiCoffeeShopCard, "facilities"> & {
-  ownerId: string;
+  ownerId?: string;
   description: string;
   address: string;
   latitude: number | null;
@@ -162,7 +166,8 @@ export async function createCoffeeShop(
     address: string;
     district: string;
     priceRange: string;
-    openingHours: string;
+    openingHours?: string;
+    openingHourEntries?: OpeningHourEntry[];
     phone?: string;
     instagram?: string;
     latitude: number;
@@ -176,7 +181,10 @@ export async function createCoffeeShop(
   formData.set("address", input.address);
   formData.set("district", input.district);
   formData.set("priceRange", input.priceRange);
-  formData.set("openingHours", input.openingHours);
+  if (input.openingHours) formData.set("openingHours", input.openingHours);
+  if (input.openingHourEntries) {
+    formData.set("openingHourEntries", JSON.stringify(input.openingHourEntries));
+  }
   if (input.phone) formData.set("phone", input.phone);
   if (input.instagram) formData.set("instagram", input.instagram);
   formData.set("latitude", String(input.latitude));
@@ -207,6 +215,7 @@ export async function updateCoffeeShop(
     district?: string;
     priceRange?: string;
     openingHours?: string;
+    openingHourEntries?: OpeningHourEntry[];
     phone?: string;
     instagram?: string;
     status?: "OPEN" | "CLOSED" | "TEMPORARILY_CLOSED";
@@ -222,6 +231,9 @@ export async function updateCoffeeShop(
   if (input.district) formData.set("district", input.district);
   if (input.priceRange) formData.set("priceRange", input.priceRange);
   if (input.openingHours) formData.set("openingHours", input.openingHours);
+  if (input.openingHourEntries) {
+    formData.set("openingHourEntries", JSON.stringify(input.openingHourEntries));
+  }
   if (input.phone !== undefined) formData.set("phone", input.phone);
   if (input.instagram !== undefined) formData.set("instagram", input.instagram);
   if (input.status) formData.set("status", input.status);

@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../../layouts/MainLayout";
 import LocationPickerMap from "../../components/common/LocationPickerMap";
+import OpeningHoursEditor from "../../components/OpeningHoursEditor";
 import { useAuth } from "../../hooks/useAuth";
 import { formatRating, hasRating } from "../../utils/rating";
+import {
+  defaultWeeklyOpeningHours,
+  openingHoursEntriesOrDefault,
+  validateOpeningHoursEntries,
+} from "../../utils/openingHours";
+import type { OpeningHourEntry } from "../../types/coffeeShop";
 import {
   getOwnerCoffeeShop,
   createMenu,
@@ -43,7 +50,9 @@ export default function OwnerDashboard() {
   const [shopDistrict, setShopDistrict] = useState("Sumbersari");
   const [shopAddress, setShopAddress] = useState("");
   const [shopPriceRange, setShopPriceRange] = useState("Rp15.000 - Rp50.000");
-  const [shopOpeningHours, setShopOpeningHours] = useState("10:00 - 22:00");
+  const [shopOpeningHourEntries, setShopOpeningHourEntries] = useState<OpeningHourEntry[]>(
+    defaultWeeklyOpeningHours
+  );
   const [shopDescription, setShopDescription] = useState("");
   const [shopPhone, setShopPhone] = useState("");
   const [shopInstagram, setShopInstagram] = useState("");
@@ -69,7 +78,9 @@ export default function OwnerDashboard() {
   const [editShopDistrict, setEditShopDistrict] = useState("Sumbersari");
   const [editShopAddress, setEditShopAddress] = useState("");
   const [editShopPriceRange, setEditShopPriceRange] = useState("");
-  const [editShopOpeningHours, setEditShopOpeningHours] = useState("");
+  const [editShopOpeningHourEntries, setEditShopOpeningHourEntries] = useState<OpeningHourEntry[]>(
+    defaultWeeklyOpeningHours
+  );
   const [editShopDescription, setEditShopDescription] = useState("");
   const [editShopPhone, setEditShopPhone] = useState("");
   const [editShopInstagram, setEditShopInstagram] = useState("");
@@ -170,7 +181,9 @@ export default function OwnerDashboard() {
           setEditShopDistrict(data.district);
           setEditShopAddress(data.address);
           setEditShopPriceRange(data.priceRange);
-          setEditShopOpeningHours(data.openingHours);
+          setEditShopOpeningHourEntries(
+            openingHoursEntriesOrDefault(data.openingHourEntries, data.openingHours)
+          );
           setEditShopDescription(data.description);
           setEditShopPhone(data.phone || "");
           setEditShopInstagram(data.instagram || "");
@@ -208,6 +221,11 @@ export default function OwnerDashboard() {
       setCreateShopError("Lokasi wajib ditentukan. Cari alamat, gunakan GPS, atau klik titik pada peta terlebih dahulu.");
       return;
     }
+    const hoursError = validateOpeningHoursEntries(shopOpeningHourEntries);
+    if (hoursError) {
+      setCreateShopError(hoursError);
+      return;
+    }
     setCreatingShop(true);
     setCreateShopError("");
 
@@ -217,7 +235,7 @@ export default function OwnerDashboard() {
         district: shopDistrict,
         address: shopAddress,
         priceRange: shopPriceRange,
-        openingHours: shopOpeningHours,
+        openingHourEntries: shopOpeningHourEntries,
         description: shopDescription,
         phone: shopPhone || undefined,
         instagram: shopInstagram || undefined,
@@ -237,7 +255,9 @@ export default function OwnerDashboard() {
         setEditShopDistrict(updated.district);
         setEditShopAddress(updated.address);
         setEditShopPriceRange(updated.priceRange);
-        setEditShopOpeningHours(updated.openingHours);
+        setEditShopOpeningHourEntries(
+          openingHoursEntriesOrDefault(updated.openingHourEntries, updated.openingHours)
+        );
         setEditShopDescription(updated.description);
         setEditShopPhone(updated.phone || "");
         setEditShopInstagram(updated.instagram || "");
@@ -260,6 +280,11 @@ export default function OwnerDashboard() {
       setEditShopError("Lokasi wajib ditentukan. Cari alamat, gunakan GPS, atau klik titik pada peta terlebih dahulu.");
       return;
     }
+    const hoursError = validateOpeningHoursEntries(editShopOpeningHourEntries);
+    if (hoursError) {
+      setEditShopError(hoursError);
+      return;
+    }
     setUpdatingShop(true);
     setEditShopError("");
 
@@ -269,7 +294,7 @@ export default function OwnerDashboard() {
         district: editShopDistrict,
         address: editShopAddress,
         priceRange: editShopPriceRange,
-        openingHours: editShopOpeningHours,
+        openingHourEntries: editShopOpeningHourEntries,
         description: editShopDescription,
         phone: editShopPhone || undefined,
         instagram: editShopInstagram || undefined,
@@ -531,15 +556,11 @@ export default function OwnerDashboard() {
                   className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-3 text-sm outline-none focus:border-terracotta"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-espresso/70 mb-1">Jam Operasional *</label>
-                <input
-                  type="text"
-                  required
-                  value={shopOpeningHours}
-                  onChange={(e) => setShopOpeningHours(e.target.value)}
-                  placeholder="Contoh: 10:00 - 23:00"
-                  className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-3 text-sm outline-none focus:border-terracotta"
+              <div className="sm:col-span-2">
+                <OpeningHoursEditor
+                  value={shopOpeningHourEntries}
+                  onChange={setShopOpeningHourEntries}
+                  disabled={creatingShop}
                 />
               </div>
               <div className="sm:col-span-2">
@@ -816,14 +837,11 @@ export default function OwnerDashboard() {
                         className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-espresso/70 mb-1">Jam Operasional *</label>
-                      <input
-                        type="text"
-                        required
-                        value={editShopOpeningHours}
-                        onChange={(e) => setEditShopOpeningHours(e.target.value)}
-                        className="w-full rounded-xl border border-espresso/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-terracotta"
+                    <div className="sm:col-span-2">
+                      <OpeningHoursEditor
+                        value={editShopOpeningHourEntries}
+                        onChange={setEditShopOpeningHourEntries}
+                        disabled={updatingShop}
                       />
                     </div>
                     <div>
