@@ -228,11 +228,11 @@ export default function CoffeeShopDetail() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="mx-auto max-w-7xl px-5 py-10"
+        className="mx-auto max-w-7xl px-5 pt-4 pb-10"
       >
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
-          {/* Kartu info: kolom kanan (sticky) di desktop, tampil lebih dulu di mobile */}
-          <aside className="order-1 h-fit rounded-2xl card-surface p-6 lg:order-2 lg:col-start-2 lg:row-start-1 lg:sticky lg:top-24">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-y-0">
+          {/* Kartu info: kolom kanan di desktop, tampil lebih dulu di mobile */}
+          <aside className="order-1 h-fit rounded-2xl card-surface p-6 lg:order-2 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-start lg:sticky lg:top-18 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:p-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {shop.categories[0]?.category && (
               <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-terracotta">
                 <IconTag className="h-3.5 w-3.5" />
@@ -240,16 +240,16 @@ export default function CoffeeShopDetail() {
               </span>
             )}
 
-            <h1 className="mt-2 text-4xl font-black break-words text-heading">{shop.name}</h1>
+            <h1 className="mt-2 text-4xl font-black break-words text-heading lg:mt-1">{shop.name}</h1>
 
-            <p className="mt-2 flex items-start gap-1.5 text-sm font-medium text-body">
+            <p className="mt-2 flex items-start gap-1.5 text-sm font-medium text-body lg:mt-1">
               <IconPin className="mt-0.5 h-4 w-4 shrink-0 text-terracotta" />
               <span>{shop.address}</span>
             </p>
 
             {ratingAvailable ? (
               <>
-                <div className="mt-4 flex items-center gap-2">
+                <div className="mt-4 flex items-center gap-2 lg:mt-3">
                   <IconStar className="h-6 w-6 text-terracotta" />
                   <b className="text-2xl font-black text-terracotta">
                     {formatRating(shop.rating, shop.reviewCount, shop.ratingSource)}
@@ -264,13 +264,13 @@ export default function CoffeeShopDetail() {
                 )}
               </>
             ) : (
-              <p className="mt-4 text-sm font-bold text-muted">Belum ada rating</p>
+              <p className="mt-4 text-sm font-bold text-muted lg:mt-3">Belum ada rating</p>
             )}
 
-            <div className="my-5 border-t border-subtle" />
+            <div className="my-5 border-t border-subtle lg:my-4" />
 
             <h2 className="text-base font-black text-heading">Informasi lokasi</h2>
-            <dl className="mt-4 grid gap-4 text-sm">
+            <dl className="mt-4 grid gap-4 text-sm lg:mt-3 lg:gap-3">
               <div className="flex items-start gap-3">
                 <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-terracotta text-terracotta">
                   <IconClock className="h-4 w-4" />
@@ -278,7 +278,7 @@ export default function CoffeeShopDetail() {
                 <div className="min-w-0 flex-1">
                   <dt className="text-xs font-medium text-muted">Jam operasional</dt>
                   {schedule.length > 0 ? (
-                    <dd className="mt-1.5 space-y-0.5">
+                    <dd className="mt-1.5 space-y-0.5 lg:mt-1">
                       {schedule.map((entry) => {
                         const isToday = entry.dayOfWeek === todayDayOfWeek;
                         return (
@@ -317,7 +317,7 @@ export default function CoffeeShopDetail() {
               </div>
             </dl>
 
-            <div className="mt-6 grid gap-3">
+            <div className="mt-6 grid gap-3 lg:mt-4 lg:gap-2">
               {whatsappUrl && (
                 <a
                   href={whatsappUrl}
@@ -356,12 +356,12 @@ export default function CoffeeShopDetail() {
           </aside>
 
           {/* Kolom kiri: foto, fasilitas, deskripsi, menu, ulasan */}
-          <section className="order-2 lg:order-1 lg:col-start-1 lg:row-start-1">
+          <section className="order-2 lg:contents">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="relative w-full overflow-hidden rounded-[4px] shadow-lg"
+              className="relative w-full overflow-hidden rounded-[4px] shadow-lg lg:col-start-1 lg:row-start-1"
             >
               <img
                 src={getImageUrl(shop.images?.[0]?.imageUrl) ?? "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=85"}
@@ -385,6 +385,8 @@ export default function CoffeeShopDetail() {
               </span>
             </motion.div>
 
+            {/* Baris 2 di desktop: konten di bawah foto (kolom kiri) */}
+            <div className="lg:col-start-1 lg:row-start-2">
             <Block title="Fasilitas">
               <div className="flex flex-wrap gap-2">
                 {shop.facilities.map((item, index) => {
@@ -455,7 +457,7 @@ export default function CoffeeShopDetail() {
             <Block title={`Ulasan & Rating (${shop.reviews.length})`}>
               <div className="space-y-8">
                 {user ? (
-                  <form onSubmit={handleReviewSubmit} className={`rounded-2xl bg-white p-8 shadow-sm ring-1 ring-subtle space-y-4 ${isShaking ? "animate-shake" : ""}`}>
+                  <form onSubmit={handleReviewSubmit} className={`rounded-[4px] bg-white p-8 shadow-sm ring-1 ring-subtle space-y-4 ${isShaking ? "animate-shake" : ""}`}>
                     <h3 className="font-black text-lg text-heading">Tulis Ulasan Kamu</h3>
                     {reviewError && <p className="text-sm text-danger font-bold">{reviewError}</p>}
                     {reviewSuccess && (
@@ -514,7 +516,7 @@ export default function CoffeeShopDetail() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: index * 0.05 }}
-                        className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-subtle space-y-2"
+                        className="rounded-[4px] bg-white p-5 shadow-sm ring-1 ring-subtle space-y-2"
                       >
                         <div className="flex items-center justify-between">
                           <b className="text-heading">{review.user.name}</b>
@@ -529,6 +531,7 @@ export default function CoffeeShopDetail() {
                 )}
               </div>
             </Block>
+            </div>
           </section>
         </div>
 

@@ -258,7 +258,7 @@ body::after {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  border-radius: var(--radius-pill);
+  border-radius: 6px;
   background-color: var(--surface-hover);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
