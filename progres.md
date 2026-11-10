@@ -909,3 +909,63 @@ Catatan: file lain yang muncul di `git status` (`README.md`, `backend/package.js
 ---
 
 *Last updated: 2026-10-16 WIB*
+
+---
+
+## 2026-11-05 WIB - Batch 1-2.8: Perbaikan Chatbot, Eval Intent (Tuning + Held-out), Fallback json_validate_failed, Deteksi Limit Harian
+
+**Branch:** `perbaikan-batch-1` (belum di-merge ke `main`).
+
+**Aktivitas:** Rangkaian perbaikan chatbot + membangun alat ukur akurasi intent yang jujur (dataset held-out terpisah), lalu menangani dua kasus error provider LLM: output non-JSON (`json_validate_failed`) dan limit harian (TPD/RPD).
+
+**Commit (terbaru di bawah):**
+- `5455560` batch 1: fix test rating, normalisasi WA, label rating kosong
+- `5eacf82` batch 2.1: fix faqTopic kosong jatuh ke smalltalk
+- `200b4c0` batch 2.2: error provider LLM jelas (klasifikasi + status 5xx)
+- `2353575` batch 2.3: perbaiki slugify dan validator slug (slug beruntun "---")
+- `7b98c66` batch 2.4: filter nearby, sanitasi history, error DB tidak bocor, retry koneksi
+- `7870227` batch 2.5a: log fallback intent, retry query fasilitas, alat ukur akurasi intent
+- `6f8f46c` batch 2.5b: perbaiki prompt intent (`shop_detail`, `nearby`, `daftar_owner`) - tuning 100% (45/45)
+- `ce953d3` batch 2.6: tambah dataset held-out eval intent (`intent-dataset-heldout.json`, 40 kalimat, opsi `--set=heldout`)
+- `0cfe653` batch 2.6b: ganti 3 kalimat held-out yang terlalu mirip dengan set tuning
+- `097bfff` batch 2.7: fallback terkontrol provider error `json_validate_failed` -> intent aman `out_of_scope` + log `reason=json_validate_failed` (bukan 502); error provider lain tetap di-rethrow
+- `5a46548` batch 2.8: harness eval mengenali limit harian provider (TPD/RPD) -> run dihentikan, akurasi tidak dicetak, `meta.valid=false`, exit code non-nol; TPM tetap di-retry 15 detik
+
+**Detail teknis penting:**
+- Prompt intent (`backend/src/chat/prompts.ts`) diperkaya aturan prioritas: nama kedai + tanya info -> `shop_detail`; "terdekat/dekat sini/sekitar sini" -> `nearby` (fasilitas tetap diisi); pemilik/owner yang ingin daftar -> `daftar_owner`.
+- Eval intent: `npm run eval:intent` (default tuning 45 kalimat), `--set=heldout` (40 kalimat), `--dry`, `--json`; item yang tertangani fallback aman ditandai `handled_by_fallback` dan tetap dihitung salah di akurasi ketat.
+- Investigasi read-only endpoint membuktikan `json_validate_failed` berasal dari validasi output provider (bukan parser kita); endpoint mengembalikan 502 sebelum perbaikan, kini balasan penolakan sopan 200.
+
+**Verifikasi:**
+- Backend `npm run check` (tsc --noEmit): LULUS.
+- Backend `npm test`: 239/239 LULUS (30 file).
+- Eval tuning: akurasi intent & penuh 100% (45/45).
+- `npm run eval:intent -- --set=heldout --dry`: 40 kalimat, dataset valid.
+
+**Belum di-commit:** fitur jam operasional per hari (model `OpeningHour`, migrasi `add_opening_hour`, util `openingHours` backend/frontend, editor owner/admin, backfill) + penyesuaian seed/parser/`search.service`/route/halaman frontend. Dokumen progres (`docs/PROGRESS.md`, `progres.md`) juga belum di-commit.
+
+*Last updated: 2026-11-05 WIB*
+
+---
+
+## 2026-11-11 WIB - Fitur Jam Operasional per Hari: Backend + Frontend Selesai
+
+**Branch:** `perbaikan-batch-1` (belum di-push).
+
+**Aktivitas:** Menyelesaikan fitur jam operasional per hari yang sebelumnya masih tercatat "belum di-commit" pada entri 2026-11-05 (catatan lama tidak dihapus).
+
+**Commit:**
+- `2abe95a` feat(opening-hours): jam operasional per hari di backend (tabel `OpeningHour`, API, backfill, seed)
+- `b13e901` feat(opening-hours): editor dan tampilan jam operasional per hari di frontend
+
+**Verifikasi:**
+- Backend `npm run check` (tsc --noEmit): exit 0.
+- Backend `npm test`: 240/240 LULUS (31 file).
+- Frontend `npx tsc -b`: exit 0.
+- Frontend `npm test`: 119/119 LULUS (13 file).
+
+**Status:** Belum di-push. Belum dites manual di browser dengan DB lokal (migrasi, seed, simpan di editor, dan tampilan halaman detail termasuk hari tutup).
+
+**Arsip eval:** Hasil eval held-out dan tuning (8 file `eval-*.txt`) sudah diarsipkan ke `docs/eval-results/` sebagai bahan Bab 4.
+
+*Last updated: 2026-11-11 WIB*
