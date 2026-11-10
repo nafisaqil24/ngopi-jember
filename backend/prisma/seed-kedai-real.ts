@@ -3,6 +3,7 @@ import { parse } from 'csv-parse/sync'
 import * as fs from 'fs'
 import * as path from 'path'
 import dotenv from 'dotenv'
+import { buildOpeningHourRows } from './seed-kedai-validation.js'
 
 const prisma = new PrismaClient()
 
@@ -286,6 +287,40 @@ function loadTestEnvOrExit(): string {
   return targetHost
 }
 
+async function upsertOpeningHours(
+  tx: Prisma.TransactionClient,
+  coffeeShopId: string,
+  openingHours: string
+): Promise<number> {
+  const rows = buildOpeningHourRows(openingHours)
+  if (!rows) return 0
+
+  for (const row of rows) {
+    await tx.openingHour.upsert({
+      where: {
+        coffeeShopId_dayOfWeek: {
+          coffeeShopId,
+          dayOfWeek: row.dayOfWeek,
+        },
+      },
+      update: {
+        openMinutes: row.openMinutes,
+        closeMinutes: row.closeMinutes,
+        isClosed: row.isClosed,
+      },
+      create: {
+        coffeeShopId,
+        dayOfWeek: row.dayOfWeek,
+        openMinutes: row.openMinutes,
+        closeMinutes: row.closeMinutes,
+        isClosed: row.isClosed,
+      },
+    })
+  }
+
+  return rows.length
+}
+
 async function main() {
   const TARGET_HOST = loadTestEnvOrExit()
 
@@ -561,6 +596,7 @@ async function main() {
     console.log(`  Aksi: ${plan.action}`)
     console.log(`  Kategori: ${plan.categoryIds?.length ?? 0}`)
     console.log(`  Fasilitas: ${plan.facilityIds?.length ?? 0}`)
+    console.log(`  OpeningHour: ${buildOpeningHourRows(plan.row.openingHours)?.length ?? 0} baris`)
     if (plan.row.warnings.length) plan.row.warnings.forEach((w) => console.log(`  ⚠️  ${w}`))
   }
 
@@ -583,9 +619,11 @@ async function main() {
   await prisma.$transaction(async (tx) => {
     for (const plan of plans) {
       if (plan.action === 'create') {
-        await tx.coffeeShop.create({ data: plan.createData! })
+        const created = await tx.coffeeShop.create({ data: plan.createData! })
+        await upsertOpeningHours(tx, created.id, plan.row.openingHours)
       } else if (plan.action === 'update') {
         await tx.coffeeShop.update({ where: { id: plan.shopId! }, data: plan.updateData! })
+        await upsertOpeningHours(tx, plan.shopId!, plan.row.openingHours)
       }
     }
   })
@@ -606,6 +644,7 @@ async function getTableCounts(): Promise<Record<string, number>> {
     Facility: await prisma.facility.count(),
     CoffeeShopCategory: await prisma.coffeeShopCategory.count(),
     CoffeeShopFacility: await prisma.coffeeShopFacility.count(),
+    OpeningHour: await prisma.openingHour.count(),
   }
 }
 

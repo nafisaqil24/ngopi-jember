@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateAndNormalize, VALID_CATEGORIES, VALID_FACILITIES } from './seed-kedai-validation.js'
+import { validateAndNormalize, VALID_CATEGORIES, VALID_FACILITIES, buildOpeningHourRows } from './seed-kedai-validation.js'
 
 describe('seed-kedai-validation: validateAndNormalize', () => {
   // --- priceRange ---
@@ -152,5 +152,23 @@ describe('seed-kedai-validation: validateAndNormalize', () => {
   it('uniqueSlug base sudah ada -> base-1', () => {
     const existing = new Set(['margin-cafe'])
     expect(validateAndNormalize.uniqueSlug('Margin Cafe', existing)).toBe('margin-cafe-1')
+  })
+})
+
+describe('seed-kedai-validation: buildOpeningHourRows', () => {
+  it('membuat 7 baris untuk semua hari dengan jam sama', () => {
+    const rows = buildOpeningHourRows('09:00 - 03:30')
+    expect(rows).toHaveLength(7)
+    expect(rows?.map((row) => row.dayOfWeek)).toEqual([0, 1, 2, 3, 4, 5, 6])
+    for (const row of rows!) {
+      expect(row.openMinutes).toBe(540)
+      expect(row.closeMinutes).toBe(1650)
+      expect(row.isClosed).toBe(false)
+    }
+  })
+
+  it('mengembalikan null bila openingHours tidak valid', () => {
+    expect(buildOpeningHourRows('Belum tersedia')).toBeNull()
+    expect(buildOpeningHourRows(null)).toBeNull()
   })
 })

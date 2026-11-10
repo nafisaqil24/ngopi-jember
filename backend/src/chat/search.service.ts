@@ -28,6 +28,15 @@ const publicShopSelect = {
   address: true,
   priceRange: true,
   openingHours: true,
+  status: true,
+  openingHourEntries: {
+    select: {
+      dayOfWeek: true,
+      openMinutes: true,
+      closeMinutes: true,
+      isClosed: true,
+    },
+  },
   latitude: true,
   longitude: true,
   description: true,
@@ -160,7 +169,10 @@ async function executeSearch(filters: SearchFilters, userLocation?: UserLocation
     const priceParsed = parsePriceRange(shop.priceRange)
     if (!priceParsed) jumlahTanpaDataHarga++
 
-    const openStatus = getOpenStatus(shop.openingHours, now)
+    const openStatus = getOpenStatus(
+      { status: shop.status, openingHourEntries: shop.openingHourEntries, openingHours: shop.openingHours },
+      now
+    )
     if (openStatus === 'tidak_diketahui') jumlahTanpaJamBuka++
 
     const facilityNames = shop.facilities.map((f) => f.facility.name)
@@ -336,7 +348,10 @@ export async function getShopBySlugOrName(query: string): Promise<PublicShopResu
   if (!shop) return null
 
   const now = new Date()
-  const openStatus = getOpenStatus(shop.openingHours, now)
+  const openStatus = getOpenStatus(
+    { status: shop.status, openingHourEntries: shop.openingHourEntries, openingHours: shop.openingHours },
+    now
+  )
   const facilityNames = shop.facilities.map((f) => f.facility.name)
   const categoryNames = shop.categories.map((c) => c.category.name)
   const effective = getEffectiveRating(shop)

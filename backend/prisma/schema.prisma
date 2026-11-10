@@ -51,9 +51,23 @@ model CoffeeShop {
   promotions      Promotion[]
   reviews         Review[]
   subscription    Subscription?
+  openingHourEntries OpeningHour[]
 
   @@index([district])
   @@index([isFeatured, createdAt])
+}
+
+model OpeningHour {
+  id           String     @id @default(cuid())
+  coffeeShopId String
+  dayOfWeek    Int
+  openMinutes  Int
+  closeMinutes Int
+  isClosed     Boolean    @default(false)
+  coffeeShop   CoffeeShop @relation(fields: [coffeeShopId], references: [id], onDelete: Cascade)
+
+  @@unique([coffeeShopId, dayOfWeek])
+  @@index([coffeeShopId])
 }
 
 model Category {

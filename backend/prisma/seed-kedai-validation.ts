@@ -1,3 +1,28 @@
+import { parseLegacyOpeningHours } from '../src/utils/openingHours.js'
+
+export interface OpeningHourRow {
+  dayOfWeek: number
+  openMinutes: number
+  closeMinutes: number
+  isClosed: boolean
+}
+
+// Bangun 7 baris OpeningHour (0=Minggu ... 6=Sabtu) dari string openingHours lama.
+// Mengembalikan null bila format string tidak bisa diparse.
+export function buildOpeningHourRows(
+  openingHours: string | null | undefined
+): OpeningHourRow[] | null {
+  const parsed = parseLegacyOpeningHours(openingHours)
+  if (!parsed) return null
+
+  return Array.from({ length: 7 }, (_, dayOfWeek) => ({
+    dayOfWeek,
+    openMinutes: parsed.openMinutes,
+    closeMinutes: parsed.closeMinutes,
+    isClosed: false,
+  }))
+}
+
 const VALID_CATEGORIES = new Set([
   'Specialty Coffee',
   'Kopi Tradisional',

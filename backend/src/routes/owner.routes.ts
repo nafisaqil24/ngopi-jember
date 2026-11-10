@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authenticate, authorize, type AuthenticatedRequest } from '../middleware/auth.js'
 import { getEffectiveRating } from '../utils/rating.js'
+import { entriesToResponse, getOpenStatus, type OpeningHourEntry } from '../utils/openingHours.js'
 
 export const ownerRouter = Router()
 
@@ -11,6 +12,34 @@ export const ownerRouter = Router()
 // sini (bukan diulang di tiap route seperti di coffee-shop.routes.ts)
 // karena semua endpoint owner memang selalu butuh keduanya.
 ownerRouter.use(authenticate, authorize('OWNER'))
+
+const openingHourEntriesInclude = {
+  select: {
+    dayOfWeek: true,
+    openMinutes: true,
+    closeMinutes: true,
+    isClosed: true,
+  },
+  orderBy: { dayOfWeek: 'asc' as const },
+}
+
+interface ShopWithSchedule {
+  status: string
+  openingHours: string
+  openingHourEntries: OpeningHourEntry[]
+}
+
+function withSchedule<T extends ShopWithSchedule>(shop: T) {
+  return {
+    ...shop,
+    openingHourEntries: entriesToResponse(shop.openingHourEntries),
+    openStatus: getOpenStatus({
+      status: shop.status,
+      openingHourEntries: shop.openingHourEntries,
+      openingHours: shop.openingHours,
+    }),
+  }
+}
 
 // GET /api/owner/coffee-shop
 // Mengambil coffee shop milik owner yang sedang login. Asumsi saat ini:
@@ -28,6 +57,7 @@ ownerRouter.get('/coffee-shop', async (request: AuthenticatedRequest, response, 
         images: { orderBy: { createdAt: 'desc' } },
         reviews: { select: { rating: true } },
         menus: { orderBy: { createdAt: 'asc' } },
+        openingHourEntries: openingHourEntriesInclude,
       },
     })
     if (!shop) return response.json({ success: true, data: null })
@@ -36,7 +66,7 @@ ownerRouter.get('/coffee-shop', async (request: AuthenticatedRequest, response, 
     return response.json({
       success: true,
       data: {
-        ...shop,
+        ...withSchedule(shop),
         rating: effective.rating,
         reviewCount: effective.reviewCount,
         ratingSource: effective.ratingSource,

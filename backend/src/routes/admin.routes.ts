@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authenticate, authorize, type AuthenticatedRequest } from '../middleware/auth.js'
 import { getEffectiveRating } from '../utils/rating.js'
+import { entriesToResponse, getOpenStatus, type OpeningHourEntry } from '../utils/openingHours.js'
 
 export const adminRouter = Router()
 
@@ -46,17 +47,46 @@ function toParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value
 }
 
+const openingHourEntriesInclude = {
+  select: {
+    dayOfWeek: true,
+    openMinutes: true,
+    closeMinutes: true,
+    isClosed: true,
+  },
+  orderBy: { dayOfWeek: 'asc' as const },
+}
+
+interface ShopWithSchedule {
+  status: string
+  openingHours: string
+  openingHourEntries: OpeningHourEntry[]
+}
+
+function withSchedule<T extends ShopWithSchedule>(shop: T) {
+  return {
+    ...shop,
+    openingHourEntries: entriesToResponse(shop.openingHourEntries),
+    openStatus: getOpenStatus({
+      status: shop.status,
+      openingHourEntries: shop.openingHourEntries,
+      openingHours: shop.openingHours,
+    }),
+  }
+}
+
 // GET /api/admin/coffee-shops - Daftar semua coffee shop untuk moderasi admin
 adminRouter.get('/coffee-shops', async (_request, response, next) => {
   try {
     const shops = await prisma.coffeeShop.findMany({
       include: {
         owner: { select: { id: true, name: true, email: true } },
+        openingHourEntries: openingHourEntriesInclude,
         _count: { select: { reviews: true, menus: true } },
       },
       orderBy: { createdAt: 'desc' },
     })
-    return response.json({ success: true, data: shops })
+    return response.json({ success: true, data: shops.map(withSchedule) })
   } catch (error) {
     return next(error)
   }
@@ -77,11 +107,12 @@ adminRouter.get('/coffee-shops/:id', async (request, response, next) => {
         images: { orderBy: { createdAt: 'desc' } },
         menus: { orderBy: { createdAt: 'asc' } },
         owner: { select: { id: true, name: true, email: true } },
+        openingHourEntries: openingHourEntriesInclude,
       },
     })
     if (!shop) return response.status(404).json({ success: false, message: 'Coffee shop tidak ditemukan' })
 
-    return response.json({ success: true, data: shop })
+    return response.json({ success: true, data: withSchedule(shop) })
   } catch (error) {
     return next(error)
   }

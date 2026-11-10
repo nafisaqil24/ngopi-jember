@@ -9,6 +9,13 @@ import { menuRouter } from './menu.routes.js'
 import { reviewRouter } from './review.routes.js'
 import { getEffectiveRating } from '../utils/rating.js'
 import { slugify } from '../utils/slug.js'
+import {
+  buildOpeningHoursSummary,
+  entriesToResponse,
+  entryFromInput,
+  getOpenStatus,
+  type OpeningHourEntry,
+} from '../utils/openingHours.js'
 
 export const coffeeShopRouter = Router()
 
@@ -85,13 +92,65 @@ const rejectPlaceholderCoordinates = (
   }
 }
 
+const HHMM_FIELD = /^([01]\d|2[0-3]):[0-5]\d$/
+
+const hhmmField = z
+  .string()
+  .trim()
+  .regex(HHMM_FIELD, { message: 'Format jam harus HH:MM (00:00-23:59)' })
+
+const openingHourInputSchema = z
+  .object({
+    dayOfWeek: z.coerce.number().int().min(0).max(6),
+    open: hhmmField.optional(),
+    close: hhmmField.optional(),
+    isClosed: z.boolean().optional().default(false),
+  })
+  .superRefine((entry, ctx) => {
+    if (entry.isClosed) return
+    if (!entry.open) {
+      ctx.addIssue({ code: 'custom', path: ['open'], message: 'open wajib diisi jika isClosed false' })
+    }
+    if (!entry.close) {
+      ctx.addIssue({ code: 'custom', path: ['close'], message: 'close wajib diisi jika isClosed false' })
+    }
+  })
+
+const openingHourEntriesSchema = z
+  .array(openingHourInputSchema)
+  .length(7, { message: 'openingHourEntries harus berisi tepat 7 item' })
+  .superRefine((entries, ctx) => {
+    const seen = new Set<number>()
+    entries.forEach((entry, index) => {
+      if (seen.has(entry.dayOfWeek)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: [index, 'dayOfWeek'],
+          message: 'dayOfWeek tidak boleh duplikat',
+        })
+      }
+      seen.add(entry.dayOfWeek)
+    })
+  })
+
+// Dukung klien multipart yang mengirim array sebagai string JSON.
+const parseEntriesIfString = (value: unknown) => {
+  if (typeof value !== 'string') return value
+  try {
+    return JSON.parse(value)
+  } catch {
+    return value
+  }
+}
+
 const shopFields = z.object({
   name: z.string().trim().min(3).max(120),
   description: z.string().trim().min(10).max(2000),
   address: z.string().trim().min(5).max(200),
   district: z.string().trim().min(2).max(80),
   priceRange: z.string().trim().min(1).max(50),
-  openingHours: z.string().trim().min(1).max(200),
+  openingHours: z.string().trim().min(1).max(200).optional(),
+  openingHourEntries: z.preprocess(parseEntriesIfString, openingHourEntriesSchema.optional()),
   phone: z.string().trim().max(30).optional(),
   instagram: z.string().trim().max(200).optional(),
   latitude: latitudeField,
@@ -99,7 +158,23 @@ const shopFields = z.object({
   status: z.enum(['OPEN', 'CLOSED', 'TEMPORARILY_CLOSED']).optional(),
 })
 
-const createShop = shopFields.superRefine(coordinatesRule).superRefine(rejectPlaceholderCoordinates)
+const requireOpeningHoursSource = (
+  data: { openingHours?: string; openingHourEntries?: unknown },
+  ctx: z.RefinementCtx,
+) => {
+  if (!data.openingHours && !data.openingHourEntries) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['openingHours'],
+      message: 'openingHours atau openingHourEntries wajib diisi',
+    })
+  }
+}
+
+const createShop = shopFields
+  .superRefine(coordinatesRule)
+  .superRefine(rejectPlaceholderCoordinates)
+  .superRefine(requireOpeningHoursSource)
 
 // updateShop sengaja TIDAK memuat ownerId/isVerified sehingga tidak bisa diubah lewat endpoint ini.
 const updateShop = shopFields.partial().superRefine(coordinatesRule)
@@ -147,12 +222,41 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c
 }
 
+const openingHourEntriesInclude = {
+  select: {
+    dayOfWeek: true,
+    openMinutes: true,
+    closeMinutes: true,
+    isClosed: true,
+  },
+  orderBy: { dayOfWeek: 'asc' as const },
+}
+
 const cardInclude = {
   facilities: { include: { facility: true } },
   images: { take: 1, orderBy: { createdAt: 'desc' as const } },
   reviews: { select: { rating: true } },
+  openingHourEntries: openingHourEntriesInclude,
   _count: { select: { reviews: true } },
 } satisfies Prisma.CoffeeShopInclude
+
+interface ShopWithSchedule {
+  status: string
+  openingHours: string
+  openingHourEntries: OpeningHourEntry[]
+}
+
+function withSchedule<T extends ShopWithSchedule>(shop: T) {
+  return {
+    ...shop,
+    openingHourEntries: entriesToResponse(shop.openingHourEntries),
+    openStatus: getOpenStatus({
+      status: shop.status,
+      openingHourEntries: shop.openingHourEntries,
+      openingHours: shop.openingHours,
+    }),
+  }
+}
 
 async function uniqueSlug(name: string) {
   const base = slugify(name)
@@ -277,13 +381,20 @@ coffeeShopRouter.get('/:slug', async (request, response, next) => {
   try {
     const slug = z.string().regex(/^[a-z0-9-]{1,200}$/).safeParse(request.params.slug)
     if (!slug.success) return response.status(400).json({ success: false, message: 'Slug coffee shop tidak valid' })
-    const shop = await prisma.coffeeShop.findUnique({ where: { slug: slug.data }, include: { categories: { include: { category: true } }, facilities: { include: { facility: true } }, images: { orderBy: { createdAt: 'desc' } }, menus: { orderBy: { createdAt: 'asc' } }, promotions: { where: { isActive: true }, orderBy: { createdAt: 'desc' } }, reviews: { include: { user: { select: { name: true } } }, orderBy: { createdAt: 'desc' } }, subscription: true } })
+    const shop = await prisma.coffeeShop.findUnique({ where: { slug: slug.data }, include: { categories: { include: { category: true } }, facilities: { include: { facility: true } }, images: { orderBy: { createdAt: 'desc' } }, menus: { orderBy: { createdAt: 'asc' } }, promotions: { where: { isActive: true }, orderBy: { createdAt: 'desc' } }, reviews: { include: { user: { select: { name: true } } }, orderBy: { createdAt: 'desc' } }, subscription: true, openingHourEntries: openingHourEntriesInclude } })
     if (!shop || !shop.isVerified) return response.status(404).json({ success: false, message: 'Coffee shop tidak ditemukan' })
     const effective = getEffectiveRating(shop)
+    const { ownerId: _ownerId, subscription: _subscription, openingHourEntries, ...publicShop } = shop
     return response.json({
       success: true,
       data: {
-        ...shop,
+        ...publicShop,
+        openingHourEntries: entriesToResponse(openingHourEntries),
+        openStatus: getOpenStatus({
+          status: shop.status,
+          openingHourEntries,
+          openingHours: shop.openingHours,
+        }),
         rating: effective.rating,
         reviewCount: effective.reviewCount,
         ratingSource: effective.ratingSource,
@@ -317,18 +428,24 @@ coffeeShopRouter.post('/', authenticate, authorize('OWNER', 'ADMIN'), upload.sin
     const parsed = createShop.safeParse(request.body)
     if (!parsed.success) return response.status(400).json({ success: false, message: 'Data coffee shop tidak valid', errors: parsed.error.flatten().fieldErrors })
 
-    const slug = await uniqueSlug(parsed.data.name)
+    const { openingHours: openingHoursInput, openingHourEntries: entriesInput, ...shopData } = parsed.data
+    const entries = entriesInput ? entriesInput.map(entryFromInput) : null
+    const openingHours = entries ? buildOpeningHoursSummary(entries) : openingHoursInput!
+
+    const slug = await uniqueSlug(shopData.name)
     const imageUrl = await uploadToCloudinaryIfNeeded(request.file)
     const shop = await prisma.coffeeShop.create({
       data: {
-        ...parsed.data,
+        ...shopData,
+        openingHours,
         slug,
         ownerId: request.auth!.userId,
+        ...(entries ? { openingHourEntries: { create: entries } } : {}),
         ...(imageUrl ? { images: { create: { imageUrl } } } : {}),
       },
-      include: { images: true },
+      include: { images: true, openingHourEntries: openingHourEntriesInclude },
     })
-    return response.status(201).json({ success: true, data: shop })
+    return response.status(201).json({ success: true, data: withSchedule(shop) })
   } catch (error) { return next(error) }
 })
 
@@ -341,7 +458,8 @@ coffeeShopRouter.put('/:id', authenticate, authorize('OWNER', 'ADMIN'), upload.s
     if (!shop) return response.status(404).json({ success: false, message: 'Coffee shop tidak ditemukan' })
     if (forbidden) return response.status(403).json({ success: false, message: 'Anda tidak memiliki akses untuk mengubah coffee shop ini' })
 
-    const data: any = { ...parsed.data }
+    const { openingHours: openingHoursInput, openingHourEntries: entriesInput, ...shopData } = parsed.data
+    const data: any = { ...shopData }
     if (data.name && data.name !== shop.name) {
       data.slug = await uniqueSlug(data.name)
     }
@@ -356,8 +474,31 @@ coffeeShopRouter.put('/:id', authenticate, authorize('OWNER', 'ADMIN'), upload.s
       })
     }
 
-    const updated = await prisma.coffeeShop.update({ where: { id: shop.id }, data, include: { images: true } })
-    return response.json({ success: true, data: updated })
+    let updated
+    if (entriesInput) {
+      const entries = entriesInput.map(entryFromInput)
+      const summary = buildOpeningHoursSummary(entries)
+      updated = await prisma.$transaction(async (tx) => {
+        await tx.openingHour.deleteMany({ where: { coffeeShopId: shop.id } })
+        await tx.openingHour.createMany({
+          data: entries.map((entry) => ({ ...entry, coffeeShopId: shop.id })),
+        })
+        return tx.coffeeShop.update({
+          where: { id: shop.id },
+          data: { ...data, openingHours: summary },
+          include: { images: true, openingHourEntries: openingHourEntriesInclude },
+        })
+      })
+    } else {
+      if (openingHoursInput) data.openingHours = openingHoursInput
+      updated = await prisma.coffeeShop.update({
+        where: { id: shop.id },
+        data,
+        include: { images: true, openingHourEntries: openingHourEntriesInclude },
+      })
+    }
+
+    return response.json({ success: true, data: withSchedule(updated) })
   } catch (error) { return next(error) }
 })
 
@@ -413,6 +554,12 @@ function toCard(shop: Prisma.CoffeeShopGetPayload<{ include: typeof cardInclude 
     isFeatured: shop.isFeatured,
     status: shop.status,
     openingHours: shop.openingHours,
+    openingHourEntries: entriesToResponse(shop.openingHourEntries),
+    openStatus: getOpenStatus({
+      status: shop.status,
+      openingHourEntries: shop.openingHourEntries,
+      openingHours: shop.openingHours,
+    }),
     image: shop.images[0]?.imageUrl ?? null,
     facilities: shop.facilities.map(item => item.facility),
     rating: effective.rating,
